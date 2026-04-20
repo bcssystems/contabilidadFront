@@ -2,7 +2,7 @@
 // BC Systems - API Client
 // ========================================
 
-const API_BASE_URL = 'http://127.0.0.1:8081/api/v1';
+const API_BASE_URL = '/api/v1';
 
 class ApiClient {
     constructor() {
@@ -32,6 +32,7 @@ class ApiClient {
 
         try {
             const response = await fetch(url, config);
+            console.log(`[API] ${options.method || 'GET'} ${endpoint} - Status: ${response.status}`);
 
             if (response.status === 401 && this.refreshTokenValue) {
                 const refreshed = await this.refreshAccessToken();
@@ -41,6 +42,11 @@ class ApiClient {
                     this.logout();
                     window.location.href = 'index.html';
                 }
+            }
+
+            if (response.status === 403) {
+                const error = await response.json().catch(() => ({ message: 'Acceso denegido (403). Verifica tus permisos o el token.' }));
+                throw new Error(error.message || 'Error 403: Acceso denegado');
             }
 
             if (!response.ok) {
@@ -117,7 +123,7 @@ class ApiClient {
     }
 
     // Proveedores
-    async getProveedores(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getProveedores(page = 0, size = 20, sortBy = 'idProveedor', sortDir = 'asc') {
         return this.request(`/proveedor?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -146,7 +152,7 @@ class ApiClient {
     }
 
     // Compras
-    async getCompras(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getCompras(page = 0, size = 20, sortBy = 'idCompra', sortDir = 'asc') {
         return this.request(`/compra?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -175,7 +181,7 @@ class ApiClient {
     }
 
     // Ventas
-    async getVentas(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getVentas(page = 0, size = 20, sortBy = 'idVenta', sortDir = 'asc') {
         return this.request(`/venta?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -204,7 +210,7 @@ class ApiClient {
     }
 
     // Gastos
-    async getGastos(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getGastos(page = 0, size = 20, sortBy = 'idGasto', sortDir = 'asc') {
         return this.request(`/gasto?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -233,7 +239,7 @@ class ApiClient {
     }
 
     // Nómina
-    async getNominas(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getNominas(page = 0, size = 20, sortBy = 'idNomina', sortDir = 'asc') {
         return this.request(`/nomina?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -262,7 +268,7 @@ class ApiClient {
     }
 
     // Empleados
-    async getEmpleados(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getEmpleados(page = 0, size = 20, sortBy = 'idEmpleado', sortDir = 'asc') {
         return this.request(`/empleado?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -289,7 +295,7 @@ class ApiClient {
     }
 
     // Cuentas Contables
-    async getCuentasContables(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getCuentasContables(page = 0, size = 20, sortBy = 'idCuentaContable', sortDir = 'asc') {
         return this.request(`/cuenta-contable?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -318,7 +324,7 @@ class ApiClient {
     }
 
     // Asientos Contables
-    async getAsientosContables(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getAsientosContables(page = 0, size = 20, sortBy = 'idAsientoContable', sortDir = 'asc') {
         return this.request(`/asiento-contable?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -347,7 +353,7 @@ class ApiClient {
     }
 
     // Movimientos Contables
-    async getMovimientosContables(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getMovimientosContables(page = 0, size = 20, sortBy = 'idMovimientoContable', sortDir = 'asc') {
         return this.request(`/movimiento-contable?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 
@@ -384,7 +390,7 @@ class ApiClient {
     }
 
     // Comisiones
-    async getComisiones(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+    async getComisiones(page = 0, size = 20, sortBy = 'idComision', sortDir = 'asc') {
         return this.request(`/comision?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
     }
 

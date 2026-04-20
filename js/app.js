@@ -1,18 +1,36 @@
 // ========================================
-// BC Systems - Main App
+// BC Systems - Main App (Modular)
 // ========================================
 
 // Global state
 let currentPage = 'inicio';
 let currentModule = 'inicio';
+const defaultSortBy = {
+    'inicio': 'id',
+    'proveedores': 'idProveedor',
+    'compras': 'idCompra',
+    'ventas': 'idVenta',
+    'gastos': 'idGasto',
+    'empleados': 'idEmpleado',
+    'nomina': 'idNomina',
+    'comisiones': 'idComision',
+    'cuentas': 'idCuentaContable',
+    'asientos': 'idAsientoContable',
+    'movimientos': 'idMovimientoContable'
+};
 let paginationState = {
     page: 0,
     size: 20,
-    sortBy: 'id',
+    sortBy: 'idProveedor',
     sortDir: 'asc',
     totalPages: 0,
     totalElements: 0
 };
+
+let modalInteractionsInitialized = false;
+
+// Module loader
+const modules = {};
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initUserInfo();
     initNavigation();
+    initModalInteractions();
     loadPage('inicio');
 });
 
@@ -75,7 +94,7 @@ function navigateTo(page) {
     paginationState = {
         page: 0,
         size: 20,
-        sortBy: 'id',
+        sortBy: defaultSortBy[page] || 'id',
         sortDir: 'asc',
         totalPages: 0,
         totalElements: 0
@@ -90,47 +109,20 @@ async function loadPage(page) {
     showLoading();
     
     try {
-        let content = '';
-        
-        switch (page) {
-            case 'inicio':
-                content = await renderInicio();
-                break;
-            case 'ventas':
-                content = await renderVentas();
-                break;
-            case 'compras':
-                content = await renderCompras();
-                break;
-            case 'gastos':
-                content = await renderGastos();
-                break;
-            case 'nomina':
-                content = await renderNomina();
-                break;
-            case 'proveedores':
-                content = await renderProveedores();
-                break;
-            case 'empleados':
-                content = await renderEmpleados();
-                break;
-            case 'comisiones':
-                content = await renderComisiones();
-                break;
-            case 'asientos':
-                content = await renderAsientos();
-                break;
-            case 'cuentas':
-                content = await renderCuentas();
-                break;
-            case 'movimientos':
-                content = await renderMovimientos();
-                break;
-            default:
-                content = '<p>Página no encontrada</p>';
+        // Load module if not loaded
+        if (!modules[page]) {
+            await loadModule(page);
         }
         
-        document.getElementById('pageContent').innerHTML = content;
+        // Call module init function (e.g., initVentas, initProveedores)
+        const capitalizedPage = page.charAt(0).toUpperCase() + page.slice(1);
+        const initFunctionName = 'init' + capitalizedPage;
+        
+        if (modules[page] && modules[page][initFunctionName]) {
+            modules[page][initFunctionName]();
+        } else if (page === 'inicio') {
+            await renderInicioPage();
+        }
     } catch (error) {
         console.error('Error loading page:', error);
         showToast('Error al cargar la página', 'error');
@@ -143,6 +135,161 @@ async function loadPage(page) {
         `;
     } finally {
         hideLoading();
+    }
+}
+
+// Load module dynamically
+async function loadModule(moduleName) {
+    const moduleFiles = {
+        'proveedores': 'js/modules/proveedores.js',
+        'ventas': 'js/modules/ventas.js',
+        'compras': 'js/modules/compras.js',
+        'gastos': 'js/modules/gastos.js',
+        'empleados': 'js/modules/empleados.js',
+        'nomina': 'js/modules/nomina.js',
+        'comisiones': 'js/modules/comisiones.js',
+        'cuentas': 'js/modules/cuentas.js',
+        'asientos': 'js/modules/asientos.js',
+        'movimientos': 'js/modules/movimientos.js'
+    };
+    
+    if (moduleFiles[moduleName]) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = moduleFiles[moduleName];
+            script.onload = () => {
+                modules[moduleName] = window;
+                resolve();
+            };
+            script.onerror = () => reject(new Error(`Failed to load module: ${moduleName}`));
+            document.head.appendChild(script);
+        });
+    }
+}
+
+// Inicio / Dashboard
+async function renderInicioPage() {
+    try {
+        const [ventas, compras, proveedores, empleados] = await Promise.all([
+            api.getVentas(0, 10),
+            api.getCompras(0, 10),
+            api.getProveedores(0, 10),
+            api.getEmpleados(0, 10)
+        ]);
+        
+        const content = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>${ventas.totalElements || 0}</h3>
+                        <p>Ventas Registradas</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>${compras.totalElements || 0}</h3>
+                        <p>Compras Registradas</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>${proveedores.totalElements || 0}</h3>
+                        <p>Proveedores</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon danger">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>${empleados.totalElements || 0}</h3>
+                        <p>Empleados</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Bienvenido al Sistema de Contabilidad</h3>
+                </div>
+                <div class="card-body">
+                    <p style="color: var(--text-secondary); line-height: 1.8;">
+                        Este es el sistema de gestión contable de <strong>BC Systems</strong>. 
+                        Desde aquí podrás administrar todos los aspectos de tu contabilidad:
+                    </p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <div style="padding: 20px; background: var(--bg-body); border-radius: 12px;">
+                            <i class="fas fa-book" style="font-size: 24px; color: var(--primary); margin-bottom: 12px;"></i>
+                            <h4 style="margin-bottom: 8px;">Asientos Contables</h4>
+                            <p style="font-size: 13px; color: var(--text-secondary);">Registra y administra todos los asientos contables de tu empresa</p>
+                        </div>
+                        <div style="padding: 20px; background: var(--bg-body); border-radius: 12px;">
+                            <i class="fas fa-chart-line" style="font-size: 24px; color: var(--success); margin-bottom: 12px;"></i>
+                            <h4 style="margin-bottom: 8px;">Reportes</h4>
+                            <p style="font-size: 13px; color: var(--text-secondary);">Visualiza el estado financiero de tu negocio en tiempo real</p>
+                        </div>
+                        <div style="padding: 20px; background: var(--bg-body); border-radius: 12px;">
+                            <i class="fas fa-shield-alt" style="font-size: 24px; color: var(--warning); margin-bottom: 12px;"></i>
+                            <h4 style="margin-bottom: 8px;">Seguridad</h4>
+                            <p style="font-size: 13px; color: var(--text-secondary);">Control de acceso y transacciones seguras</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('pageContent').innerHTML = content;
+    } catch (error) {
+        const content = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>-</h3>
+                        <p>Ventas</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>-</h3>
+                        <p>Compras</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>-</h3>
+                        <p>Proveedores</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon danger">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>-</h3>
+                        <p>Empleados</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('pageContent').innerHTML = content;
     }
 }
 
@@ -1177,6 +1324,26 @@ function showToast(message, type = 'info') {
 }
 
 // Modal functions
+function initModalInteractions() {
+    if (modalInteractionsInitialized) return;
+    const overlay = document.getElementById('modalOverlay');
+    if (!overlay) return;
+
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && overlay.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    modalInteractionsInitialized = true;
+}
+
 function openModal(title, bodyContent, footerContent) {
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyContent;

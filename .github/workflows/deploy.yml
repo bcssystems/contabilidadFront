@@ -1,0 +1,17 @@
+name: Deploy Contabilidad Front
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Go to frontend folder and pull changes
+        run: |
+          cd /var/www/contabilidad/frontend
+          git reset --hard
+          git pull origin main

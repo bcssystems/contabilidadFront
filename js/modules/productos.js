@@ -2,7 +2,7 @@
 // BC Systems - Módulo Inventario (Productos)
 // ========================================
 
-const API_IMAGES_URL = 'http://localhost:8887/api/images';
+const API_IMAGES_URL = '/api/images';
 let allProductos = [];
 let searchTimeout;
 let isSearching = false;

@@ -47,7 +47,7 @@ function buildProductosRows(items) {
             <td>${item.id}</td>
             <td>
                 ${item.imagenes && item.imagenes.length > 0
-                    ? `<img src="${API_IMAGES_URL}/${item.imagenes[0]}" alt="${item.nombre}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">`
+                    ? `<img src="${API_IMAGES_URL}/${encodeURIComponent(item.imagenes[0])}" alt="${item.nombre}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">`
                     : '<div style="width:40px;height:40px;background:var(--bg-body);border-radius:6px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-box" style="color:var(--text-light);"></i></div>'}
             </td>
             <td>${item.nombre}</td>

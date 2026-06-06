@@ -6,6 +6,7 @@ const API_IMAGES_URL = '/api/images';
 let allProductos = [];
 let searchTimeout;
 let isSearching = false;
+let imagenesAEliminar = [];
 
 window.initProductos = function() {
     loadProductos(paginationState.page);
@@ -169,13 +170,21 @@ function searchProductos(query) {
         }
     }
 }
+function marcarImagenEliminar(filename) {
+    const wrapper = document.getElementById('img-' + filename.replace(/[^a-zA-Z0-9]/g, ''));
+    if (wrapper) {
+        wrapper.style.display = 'none';
+    }
+    imagenesAEliminar.push(filename);
+}
+
 // View product detail
 window.viewProducto = async function(id) {
     try {
         const p = await api.getProducto(id);
         const imagenesHtml = p.imagenes && p.imagenes.length > 0
             ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-                ${p.imagenes.map(img => `<img src="${API_IMAGES_URL}/${img}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--border-color);">`).join('')}
+                ${p.imagenes.map(img => `<img src="${API_IMAGES_URL}/${encodeURIComponent(img)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--border-color);">`).join('')}
                </div>`
             : '<p style="color:var(--text-light);">Sin imágenes</p>';
 
@@ -270,6 +279,7 @@ window.saveProducto = async function() {
 window.editProducto = async function(id) {
     try {
         const p = await api.getProducto(id);
+        imagenesAEliminar = [];
         openModal('Editar Producto', buildProductoForm(p), `
             <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
             <button class="btn btn-primary" onclick="updateProducto(${id})">Actualizar</button>
@@ -297,7 +307,8 @@ window.updateProducto = async function(id) {
         descripcion: formData.get('descripcion'),
         especificaciones: especs,
         mensajeWhatsapp: formData.get('mensajeWhatsapp'),
-        pagadoCaja: document.getElementById('pagadoCaja').checked
+        pagadoCaja: document.getElementById('pagadoCaja').checked,
+        imagenesEliminar: imagenesAEliminar
     };
 
     const jsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -312,6 +323,7 @@ window.updateProducto = async function(id) {
     try {
         showLoading();
         await api.updateProducto(id, submitData);
+        imagenesAEliminar = [];
         showToast('Producto actualizado exitosamente', 'success');
         closeModal();
         loadProductos();
@@ -347,7 +359,14 @@ function buildProductoForm(producto) {
         ? `<div style="margin-bottom:12px;">
             <label class="form-label">Imágenes actuales</label>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                ${producto.imagenes.map(img => `<img src="${API_IMAGES_URL}/${img}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:2px solid var(--border-color);">`).join('')}
+                ${producto.imagenes.map(img => {
+                    const safeId = 'img-' + img.replace(/[^a-zA-Z0-9]/g, '');
+                    const encoded = encodeURIComponent(img);
+                    return `<div id="${safeId}" style="position:relative;display:inline-block;">
+                        <img src="${API_IMAGES_URL}/${encoded}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:2px solid var(--border-color);">
+                        <button type="button" onclick="marcarImagenEliminar('${img}')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:#e74c3c;color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;" title="Eliminar imagen">&times;</button>
+                    </div>`;
+                }).join('')}
             </div>
            </div>`
         : '';

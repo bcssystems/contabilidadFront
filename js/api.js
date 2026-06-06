@@ -2,7 +2,7 @@
 // BC Systems - API Client
 // ========================================
 
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = 'http://localhost:8887/api/v1';
 
 class ApiClient {
     constructor() {
@@ -22,13 +22,17 @@ class ApiClient {
 
     async request(endpoint, options = {}) {
         const url = `${API_BASE_URL}${endpoint}`;
+        const isFormData = options.body instanceof FormData;
         const config = {
             ...options,
             headers: {
-                ...this.getHeaders(),
+                ...(isFormData ? {} : this.getHeaders()),
                 ...options.headers
             }
         };
+        if (isFormData && this.accessToken) {
+            config.headers['Authorization'] = `Bearer ${this.accessToken}`;
+        }
 
         try {
             const response = await fetch(url, config);
@@ -120,6 +124,68 @@ class ApiClient {
 
     isAuthenticated() {
         return !!this.accessToken;
+    }
+
+    async getMe() {
+        return this.request('/auth/me');
+    }
+
+    // Usuarios
+    async getUsuarios() {
+        return this.request('/usuarios');
+    }
+
+    async getUsuario(id) {
+        return this.request(`/usuarios/${id}`);
+    }
+
+    async createUsuario(data) {
+        return this.request('/usuarios', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updateUsuario(id, data) {
+        return this.request(`/usuarios/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async deleteUsuario(id) {
+        return this.request(`/usuarios/${id}`, {
+            method: 'DELETE'
+        });
+    }
+
+    // Productos
+    async getProductos(page = 0, size = 20, sortBy = 'id', sortDir = 'asc') {
+        return this.request(`/productos?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
+    }
+
+    async getProducto(id) {
+        return this.request(`/productos/${id}`);
+    }
+
+    async createProducto(formData) {
+        return this.request('/productos', {
+            method: 'POST',
+            body: formData
+        });
+    }
+
+    async updateProducto(id, formData) {
+        return this.request(`/productos/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+    }
+
+    async deleteProducto(id) {
+        return this.request(`/productos/${id}`, {
+            method: 'DELETE'
+        });
     }
 
     // Proveedores

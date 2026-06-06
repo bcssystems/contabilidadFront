@@ -16,7 +16,9 @@ const defaultSortBy = {
     'comisiones': 'idComision',
     'cuentas': 'idCuentaContable',
     'asientos': 'idAsientoContable',
-    'movimientos': 'idMovimientoContable'
+    'movimientos': 'idMovimientoContable',
+    'productos': 'id',
+    'usuarios': 'idUsuario'
 };
 let paginationState = {
     page: 0,
@@ -47,7 +49,23 @@ function initUserInfo() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
         document.getElementById('userName').textContent = user.username || 'Usuario';
+        const roleLabels = { 'ADMIN': 'Administrador', 'ALMACEN': 'Almacén', 'USER': 'Usuario' };
+        document.getElementById('userRole').textContent = roleLabels[user.rol] || user.rol || 'Usuario';
         document.getElementById('userAvatar').innerHTML = '<i class="fas fa-user"></i>';
+
+        // Show/hide nav sections based on role
+        const isAdmin = user.rol === 'ADMIN';
+        const isAlmacen = user.rol === 'ALMACEN';
+        document.getElementById('nav-almacen-section').style.display = (isAdmin || isAlmacen) ? '' : 'none';
+        document.getElementById('nav-admin-section').style.display = isAdmin ? '' : 'none';
+
+        if (isAlmacen) {
+            document.querySelectorAll('.sidebar-nav .nav-section').forEach(section => {
+                if (section.id !== 'nav-almacen-section') {
+                    section.style.display = 'none';
+                }
+            });
+        }
     }
 }
 
@@ -85,8 +103,10 @@ function navigateTo(page) {
         'empleados': 'Empleados',
         'comisiones': 'Comisiones',
         'asientos': 'Asientos Contables',
-        'cuentas': 'Cuentas Contables',
-        'movimientos': 'Movimientos Contables'
+    'cuentas': 'Cuentas Contables',
+    'movimientos': 'Movimientos Contables',
+    'productos': 'Inventario',
+    'usuarios': 'Usuarios'
     };
     document.getElementById('pageTitle').textContent = titles[page] || page;
     
@@ -150,7 +170,9 @@ async function loadModule(moduleName) {
         'comisiones': 'js/modules/comisiones.js',
         'cuentas': 'js/modules/cuentas.js',
         'asientos': 'js/modules/asientos.js',
-        'movimientos': 'js/modules/movimientos.js'
+        'movimientos': 'js/modules/movimientos.js',
+        'productos': 'js/modules/productos.js',
+        'usuarios': 'js/modules/usuarios.js'
     };
     
     if (moduleFiles[moduleName]) {

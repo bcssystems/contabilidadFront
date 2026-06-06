@@ -27,8 +27,18 @@ async function handleLogin(e) {
         const success = await api.login(username, password);
         
         if (success) {
-            // Save user info
-            localStorage.setItem('user', JSON.stringify({ username }));
+            // Get user info with role
+            try {
+                const userInfo = await api.getMe();
+                localStorage.setItem('user', JSON.stringify({
+                    username,
+                    rol: userInfo.rol,
+                    nombre: userInfo.nombre,
+                    idUsuario: userInfo.idUsuario
+                }));
+            } catch (e) {
+                localStorage.setItem('user', JSON.stringify({ username }));
+            }
             
             // Redirect to dashboard
             window.location.href = 'dashboard.html';

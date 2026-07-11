@@ -17,7 +17,9 @@ const defaultSortBy = {
     'cuentas': 'idCuentaContable',
     'asientos': 'idAsientoContable',
     'movimientos': 'idMovimientoContable',
-    'productos': 'id',
+        'productos': 'id',
+    'almacen': 'id',
+    'sucursales': 'idSucursal',
     'usuarios': 'idUsuario'
 };
 let paginationState = {
@@ -103,9 +105,11 @@ function navigateTo(page) {
         'empleados': 'Empleados',
         'comisiones': 'Comisiones',
         'asientos': 'Asientos Contables',
-    'cuentas': 'Cuentas Contables',
+        'cuentas': 'Cuentas Contables',
     'movimientos': 'Movimientos Contables',
     'productos': 'Inventario',
+    'almacen': 'Movimientos de Almac\u00e9n',
+    'sucursales': 'Sucursales',
     'usuarios': 'Usuarios'
     };
     document.getElementById('pageTitle').textContent = titles[page] || page;
@@ -172,6 +176,8 @@ async function loadModule(moduleName) {
         'asientos': 'js/modules/asientos.js',
         'movimientos': 'js/modules/movimientos.js',
         'productos': 'js/modules/productos.js',
+        'almacen': 'js/modules/almacen.js',
+        'sucursales': 'js/modules/sucursales.js',
         'usuarios': 'js/modules/usuarios.js'
     };
     

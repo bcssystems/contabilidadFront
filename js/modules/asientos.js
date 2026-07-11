@@ -1,280 +1,190 @@
-// ========================================
-// BC Systems - Módulo Asientos Contables
-// ========================================
+let editingAsientoId = null;
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+const PAGE_SIZE = 20;
 
-window.initAsientos = function() {
-    loadAsientos(0);
-};
-
-async function loadAsientos(page = 0) {
-    showLoading();
-    try {
-        const data = await api.getAsientosContables(page, paginationState.size, paginationState.sortBy, paginationState.sortDir);
-        renderAsientosTable(data);
-    } catch (error) {
-        console.error('Error cargando asientos contables:', error);
-        showToast('Error al cargar asientos contables: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
+export function init() {
+  currentPage = 0;
+  loadAsientos();
+  bindEvents();
 }
 
-function renderAsientosTable(data) {
-    const items = data.content.map(item => `
-        <tr>
-            <td>${item.id}</td>
-            <td>${item.fecha || '-'}</td>
-            <td>${item.referencia || '-'}</td>
-            <td>${item.descripcion || '-'}</td>
-            <td><span class="status-badge ${item.tipoAsientoContable?.toLowerCase() || 'borrador'}">${item.tipoAsientoContable || 'BORRADOR'}</span></td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn view" onclick="viewAsiento(${item.id})" title="Ver">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="action-btn edit" onclick="editAsiento(${item.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteAsiento(${item.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
-    const html = `
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Asientos Contables</h3>
-                <button class="btn btn-primary" onclick="openAsientoModal()">
-                    <i class="fas fa-plus"></i> Nuevo Asiento
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-toolbar">
-                    <div class="table-toolbar-left">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar asiento...">
-                        </div>
-                    </div>
-                    <div class="table-toolbar-right">
-                        <select class="select-control" onchange="changePageSize(this.value, 'asientos')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
-                        </select>
-                    </div>
-                </div>
-                ${data.content.length === 0 ? `
-                    <div class="empty-state">
-                        <i class="fas fa-book"></i>
-                        <h3>No hay asientos contables</h3>
-                        <p>Comienza registrando un nuevo asiento</p>
-                        <button class="btn btn-primary" onclick="openAsientoModal()">
-                            <i class="fas fa-plus"></i> Nuevo Asiento
-                        </button>
-                    </div>
-                ` : `
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Fecha</th>
-                                    <th>Referencia</th>
-                                    <th>Descripción</th>
-                                    <th>Tipo</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items}
-                            </tbody>
-                        </table>
-                    </div>
-                    ${renderPagination(data, 'asientos')}
-                `}
-            </div>
-        </div>
-    `;
-
-    document.getElementById('pageContent').innerHTML = html;
+function bindEvents() {
+  document.getElementById('btnNuevoAsiento')?.addEventListener('click', () => openAsientoModal(null));
+  document.getElementById('btnGuardarAsiento')?.addEventListener('click', saveAsiento);
+  document.getElementById('searchAsiento')?.addEventListener('input', Utils.debounce(function() {
+    currentPage = 0;
+    loadAsientos();
+  }, 300));
+  document.getElementById('filterTipoAsiento')?.addEventListener('change', function() {
+    currentPage = 0;
+    loadAsientos();
+  });
+  document.getElementById('asientoModal')?.addEventListener('hidden.bs.modal', () => { editingAsientoId = null; });
 }
 
-window.openAsientoModal = function() {
-    const today = new Date().toISOString().split('T')[0];
-    openModal('Nuevo Asiento Contable', `
-        <form id="asientoForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Fecha</label>
-                    <input type="date" class="form-control" name="fecha" value="${today}" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Referencia</label>
-                    <input type="text" class="form-control" name="referencia" placeholder="ej. AS-001" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Descripción</label>
-                <textarea class="form-control" name="descripcion" rows="2" required></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Tipo de Asiento</label>
-                <select class="form-control" name="tipoAsientoContable" required>
-                    <option value="BORRADOR">Borrador</option>
-                    <option value="CONFIRMADO">Confirmado</option>
-                    <option value="CANCELADO">Cancelado</option>
-                </select>
-            </div>
-        </form>
-    `, `
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveAsiento()">Guardar</button>
-    `);
-};
+function getFilterParams() {
+  const q = document.getElementById('searchAsiento')?.value?.trim() || '';
+  const tipo = document.getElementById('filterTipoAsiento')?.value || '';
+  let params = '?page=' + currentPage + '&size=' + PAGE_SIZE + '&sort=id,desc';
+  if (q) params += '&search=' + encodeURIComponent(q);
+  if (tipo) params += '&tipoAsientoContable=' + encodeURIComponent(tipo);
+  return params;
+}
 
-window.saveAsiento = async function() {
-    const form = document.getElementById('asientoForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    data.movimientos = [];
-    
-    try {
-        showLoading();
-        await api.createAsientoContable(data);
-        showToast('Asiento contable creado exitosamente', 'success');
-        closeModal();
-        loadAsientos();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+async function loadAsientos() {
+  const tbody = document.getElementById('tableAsientosBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-journal-whills"></i><p>Cargando...</p></div></td></tr>';
+  try {
+    const resp = await API.get('/asiento-contable' + getFilterParams());
+    renderTable(resp);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar: ' + e.message + '</p></div></td></tr>';
+  }
+}
 
-window.viewAsiento = async function(id) {
-    try {
-        const asiento = await api.getAsientoContable(id);
-        const movimientosHtml = asiento.movimientos?.map(m => `
-            <tr>
-                <td>${m.cuentaCodigo || '-'}</td>
-                <td>${m.cuentaNombre || '-'}</td>
-                <td>${formatCurrency(m.debe)}</td>
-                <td>${formatCurrency(m.haber)}</td>
-            </tr>
-        `).join('') || '<tr><td colspan="4">Sin movimientos</td></tr>';
-        
-        openModal(`Asiento #${id}`, `
-            <div class="asiento-detail">
-                <div class="detail-row">
-                    <span class="detail-label">Fecha:</span>
-                    <span>${asiento.fecha || '-'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Referencia:</span>
-                    <span>${asiento.referencia || '-'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Descripción:</span>
-                    <span>${asiento.descripcion || '-'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Tipo:</span>
-                    <span>${asiento.tipoAsientoContable || '-'}</span>
-                </div>
-            </div>
-            <h4 style="margin-top: 20px;">Movimientos</h4>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Cuenta</th>
-                        <th>Nombre</th>
-                        <th>Debe</th>
-                        <th>Haber</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${movimientosHtml}
-                </tbody>
-            </table>
-        `, `
-            <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
-        `);
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-};
+function renderTable(data) {
+  const tbody = document.getElementById('tableAsientosBody');
+  if (!tbody) return;
+  const list = data.content || [];
+  totalPages = data.totalPages || 0;
+  totalElements = data.totalElements || 0;
 
-window.editAsiento = async function(id) {
-    try {
-        const asiento = await api.getAsientoContable(id);
-        openModal('Editar Asiento Contable', `
-            <form id="asientoForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Fecha</label>
-                        <input type="date" class="form-control" name="fecha" value="${asiento.fecha || ''}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Referencia</label>
-                        <input type="text" class="form-control" name="referencia" value="${asiento.referencia || ''}" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Descripción</label>
-                    <textarea class="form-control" name="descripcion" rows="2" required>${asiento.descripcion || ''}</textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Tipo de Asiento</label>
-                    <select class="form-control" name="tipoAsientoContable" required>
-                        <option value="BORRADOR" ${asiento.tipoAsientoContable === 'BORRADOR' ? 'selected' : ''}>Borrador</option>
-                        <option value="CONFIRMADO" ${asiento.tipoAsientoContable === 'CONFIRMADO' ? 'selected' : ''}>Confirmado</option>
-                        <option value="CANCELADO" ${asiento.tipoAsientoContable === 'CANCELADO' ? 'selected' : ''}>Cancelado</option>
-                    </select>
-                </div>
-            </form>
-        `, `
-            <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="updateAsiento(${id})">Actualizar</button>
-        `);
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-};
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-journal-whills"></i><p>No hay asientos contables</p></div></td></tr>';
+    renderPagination();
+    return;
+  }
 
-window.updateAsiento = async function(id) {
-    const form = document.getElementById('asientoForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    data.movimientos = [];
-    
-    try {
-        showLoading();
-        await api.updateAsientoContable(id, data);
-        showToast('Asiento contable actualizado exitosamente', 'success');
-        closeModal();
-        loadAsientos();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+  tbody.innerHTML = list.map(item =>
+    '<tr>' +
+      '<td>' + item.id + '</td>' +
+      '<td>' + Utils.formatDate(item.fecha) + '</td>' +
+      '<td>' + Utils.esc(item.referencia || '-') + '</td>' +
+      '<td>' + Utils.esc(item.descripcion || '-') + '</td>' +
+      '<td><span class="status-badge ' + (item.tipoAsientoContable || 'borrador').toLowerCase() + '">' + (item.tipoAsientoContable || 'BORRADOR') + '</span></td>' +
+      '<td>' +
+        '<button class="btn btn-sm btn-outline-info me-1 btn-view-asiento" data-id="' + item.id + '"><i class="fas fa-eye"></i></button>' +
+        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-asiento" data-id="' + item.id + '"><i class="fas fa-edit"></i></button>' +
+        '<button class="btn btn-sm btn-outline-danger btn-delete-asiento" data-id="' + item.id + '"><i class="fas fa-trash"></i></button>' +
+      '</td>' +
+    '</tr>'
+  ).join('');
 
-window.deleteAsiento = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar este asiento contable?')) return;
-    
-    try {
-        showLoading();
-        await api.deleteAsientoContable(id);
-        showToast('Asiento contable eliminado exitosamente', 'success');
-        loadAsientos();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
+  tbody.querySelectorAll('.btn-view-asiento').forEach(b => b.addEventListener('click', () => viewAsiento(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.btn-edit-asiento').forEach(b => b.addEventListener('click', () => openAsientoModal(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.btn-delete-asiento').forEach(b => b.addEventListener('click', () => deleteAsiento(parseInt(b.dataset.id))));
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const container = document.getElementById('paginationAsientos');
+  if (!container) return;
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  let html = '<div class="d-flex justify-content-between align-items-center"><small class="text-muted">P&aacute;gina ' + (currentPage + 1) + ' de ' + totalPages + ' (' + totalElements + ' registros)</small><div class="btn-group">';
+  html += '<button class="btn btn-sm btn-outline-secondary" id="prevPageAs" ' + (currentPage === 0 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>';
+  html += '<button class="btn btn-sm btn-outline-secondary" id="nextPageAs" ' + (currentPage >= totalPages - 1 ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>';
+  html += '</div></div>';
+  container.innerHTML = html;
+
+  document.getElementById('prevPageAs')?.addEventListener('click', () => { if (currentPage > 0) { currentPage--; loadAsientos(); } });
+  document.getElementById('nextPageAs')?.addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; loadAsientos(); } });
+}
+
+function openAsientoModal(id) {
+  editingAsientoId = id;
+  const titleEl = document.getElementById('asientoModalTitle');
+  const btn = document.getElementById('btnGuardarAsiento');
+  document.getElementById('asientoId').value = '';
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('asientoFecha').value = today;
+  document.getElementById('asientoReferencia').value = '';
+  document.getElementById('asientoDescripcion').value = '';
+  document.getElementById('asientoTipo').value = 'BORRADOR';
+
+  if (id) {
+    titleEl.textContent = 'Editar Asiento Contable';
+    btn.textContent = 'Actualizar';
+    API.get('/asiento-contable/' + id).then(a => {
+      document.getElementById('asientoFecha').value = a.fecha || today;
+      document.getElementById('asientoReferencia').value = a.referencia || '';
+      document.getElementById('asientoDescripcion').value = a.descripcion || '';
+      document.getElementById('asientoTipo').value = a.tipoAsientoContable || 'BORRADOR';
+      document.getElementById('asientoId').value = id;
+    }).catch(e => {
+      Utils.showToast('Error: ' + e.message, 'error');
+      return;
+    });
+  } else {
+    titleEl.textContent = 'Nuevo Asiento Contable';
+    btn.textContent = 'Guardar';
+  }
+
+  new bootstrap.Modal(document.getElementById('asientoModal')).show();
+}
+
+async function saveAsiento() {
+  const id = document.getElementById('asientoId').value;
+  const data = {
+    fecha: document.getElementById('asientoFecha').value,
+    referencia: document.getElementById('asientoReferencia').value.trim(),
+    descripcion: document.getElementById('asientoDescripcion').value.trim(),
+    tipoAsientoContable: document.getElementById('asientoTipo').value,
+    movimientos: [],
+  };
+  if (!data.referencia || !data.descripcion) {
+    Utils.showToast('Referencia y descripci&oacute;n son obligatorios', 'warning');
+    return;
+  }
+  try {
+    if (id) {
+      await API.put('/asiento-contable/' + id, data);
+      Utils.showToast('Asiento actualizado', 'success');
+    } else {
+      await API.post('/asiento-contable', data);
+      Utils.showToast('Asiento creado', 'success');
     }
-};
+    bootstrap.Modal.getInstance(document.getElementById('asientoModal'))?.hide();
+    loadAsientos();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function viewAsiento(id) {
+  try {
+    const a = await API.get('/asiento-contable/' + id);
+    document.getElementById('viewAsientoTitle').textContent = 'Asiento #' + id;
+    const movs = (a.movimientos || []).map(m =>
+      '<tr><td>' + Utils.esc(m.cuentaCodigo || '-') + '</td><td>' + Utils.esc(m.cuentaNombre || '-') + '</td><td>' + Utils.formatCurrency(m.debe) + '</td><td>' + Utils.formatCurrency(m.haber) + '</td></tr>'
+    ).join('') || '<tr><td colspan="4" class="text-muted">Sin movimientos</td></tr>';
+
+    document.getElementById('viewAsientoBody').innerHTML =
+      '<div class="mb-3"><div class="row g-3"><div class="col-md-3"><strong>Fecha:</strong> ' + Utils.esc(a.fecha || '-') + '</div>' +
+      '<div class="col-md-3"><strong>Referencia:</strong> ' + Utils.esc(a.referencia || '-') + '</div>' +
+      '<div class="col-md-3"><strong>Tipo:</strong> ' + Utils.esc(a.tipoAsientoContable || '-') + '</div>' +
+      '<div class="col-md-3"><strong>Descripci&oacute;n:</strong> ' + Utils.esc(a.descripcion || '-') + '</div></div></div>' +
+      '<h6 class="fw-semibold mb-2">Movimientos</h6><div class="table-responsive"><table class="table table-sm table-custom mb-0"><thead><tr><th>C&oacute;digo</th><th>Cuenta</th><th>Debe</th><th>Haber</th></tr></thead><tbody>' + movs + '</tbody></table></div>';
+
+    new bootstrap.Modal(document.getElementById('viewAsientoModal')).show();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function deleteAsiento(id) {
+  const confirmed = await Utils.confirmAction('&iquest;Eliminar este asiento contable?', 'Confirmar', 'Eliminar');
+  if (!confirmed) return;
+  try {
+    await API.del('/asiento-contable/' + id);
+    Utils.showToast('Asiento eliminado', 'success');
+    loadAsientos();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}

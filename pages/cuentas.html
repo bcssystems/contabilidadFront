@@ -1,0 +1,80 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h4><i class="fas fa-wallet me-2" style="color:var(--primary)"></i>Cuentas Contables</h4>
+      <small class="text-muted">Plan de cuentas del sistema</small>
+    </div>
+    <button class="btn btn-primary ripple" id="btnNuevaCuenta">
+      <i class="fas fa-plus me-1"></i> Nueva Cuenta
+    </button>
+  </div>
+
+  <div class="filter-bar filter-bar-1cols">
+    <div class="input-group">
+      <span class="input-group-text"><i class="fas fa-search"></i></span>
+      <input type="text" class="form-control" id="searchCuenta" placeholder="Buscar por c&oacute;digo o nombre...">
+    </div>
+  </div>
+
+  <div class="panel-card p-0 overflow-hidden">
+    <div class="cuentas-tree" id="cuentasTree">
+      <div class="productos-tree-header">
+        <span class="th-toggle" style="width:40px"></span>
+        <span class="th-sku" style="flex:1">C&oacute;digo</span>
+        <span class="th-nombre" style="flex:2">Nombre</span>
+        <span class="th-tipo" style="flex:1">Tipo</span>
+        <span class="th-estado" style="flex:0.5">Estado</span>
+        <span class="th-acciones" style="width:80px"></span>
+      </div>
+      <ul class="producto-tree-root" id="cuentaTreeRoot">
+        <li class="producto-node empty-tree"><div class="empty-state"><i class="fas fa-wallet"></i><p>Cargando...</p></div></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="cuentaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="cuentaModalTitle">Nueva Cuenta Contable</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formCuenta">
+          <input type="hidden" id="cuentaId">
+          <div class="mb-3">
+            <label class="form-label">C&oacute;digo <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="cuentaCodigo" required maxlength="20">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="cuentaNombre" required maxlength="200">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo <span class="text-danger">*</span></label>
+            <select class="form-select" id="cuentaTipo" required>
+              <option value="ACTIVO">Activo</option>
+              <option value="PASIVO">Pasivo</option>
+              <option value="CAPITAL">Capital</option>
+              <option value="INGRESO">Ingreso</option>
+              <option value="GASTO">Gasto</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cuenta Padre</label>
+            <select class="form-select" id="cuentaPadre"></select>
+          </div>
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="cuentaActiva" checked>
+            <label class="form-check-label" for="cuentaActiva">Activa</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary px-4 ripple" id="btnGuardarCuenta">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

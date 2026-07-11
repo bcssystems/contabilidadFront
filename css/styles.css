@@ -814,6 +814,33 @@ body::-webkit-scrollbar {
     color: var(--text-primary);
 }
 
+/* Compact table variant for inventory */
+.table-compact {
+    table-layout: fixed;
+}
+
+.table-compact th,
+.table-compact td {
+    padding: 10px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: var(--text-light);
+    border-radius: 3px;
+}
+
 /* Status Badges */
 .status-badge {
     display: inline-flex;

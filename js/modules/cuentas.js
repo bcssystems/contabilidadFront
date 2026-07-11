@@ -1,362 +1,216 @@
-// ========================================
-// BC Systems - Módulo Cuentas Contables
-// ========================================
+let cuentasTreeData = [];
+let editingCuentaId = null;
 
-window.initCuentas = function() {
-    loadCuentas(0);
-};
+export function init() {
+  loadCuentas();
+  bindEvents();
+}
 
-async function loadCuentas(page = 0) {
-    showLoading();
-    try {
-        const size = 300;
-        paginationState.page = 0;
-        paginationState.size = size;
+function bindEvents() {
+  document.getElementById('btnNuevaCuenta')?.addEventListener('click', () => openCuentaModal(null));
+  document.getElementById('btnGuardarCuenta')?.addEventListener('click', saveCuenta);
+  document.getElementById('searchCuenta')?.addEventListener('input', Utils.debounce(function() {
+    filterCuentas(this.value);
+  }, 300));
+  document.getElementById('cuentaModal')?.addEventListener('hidden.bs.modal', () => { editingCuentaId = null; });
+}
 
-        let currentPage = 0;
-        let totalPages = 1;
-        const todasLasCuentas = [];
+function buildParams(page, size) {
+  return '?page=' + (page || 0) + '&size=' + (size || 300) + '&sort=id,asc';
+}
 
-        do {
-            const response = await api.getCuentasContables(currentPage, size, paginationState.sortBy, paginationState.sortDir);
-            totalPages = response.totalPages || 1;
-            paginationState.totalPages = totalPages;
-            paginationState.totalElements = response.totalElements || response.content?.length || 0;
-            if (Array.isArray(response.content)) {
-                todasLasCuentas.push(...response.content);
-            }
-            currentPage += 1;
-        } while (currentPage < totalPages);
+async function loadCuentas() {
+  try {
+    const resp = await API.get('/cuenta-contable' + buildParams(0, 300));
+    cuentasTreeData = resp.content || resp || [];
+    renderTree(cuentasTreeData);
+  } catch (e) {
+    Utils.showToast('Error al cargar cuentas: ' + e.message, 'error');
+  }
+}
 
-        renderCuentasTree(todasLasCuentas);
-    } catch (error) {
-        console.error('Error cargando cuentas contables:', error);
-        showToast('Error al cargar cuentas contables: ' + error.message, 'error');
-    } finally {
-        hideLoading();
+function buildHierarchy(list) {
+  const map = new Map();
+  const roots = [];
+  list.forEach(c => map.set(c.id, { ...c, children: [] }));
+  map.forEach(c => {
+    if (c.cuentaPadreId && map.has(c.cuentaPadreId)) {
+      map.get(c.cuentaPadreId).children.push(c);
+    } else {
+      roots.push(c);
     }
+  });
+  const sortFn = (a, b) => (a.codigo || '').localeCompare(b.codigo || '');
+  const sortTree = nodes => { nodes.sort(sortFn); nodes.forEach(n => { if (n.children.length) sortTree(n.children); }); };
+  sortTree(roots);
+  return roots;
 }
 
-function renderCuentasTree(cuentas = []) {
-    if (!Array.isArray(cuentas)) cuentas = [];
+function renderNode(cuenta) {
+  const hasChildren = cuenta.children && cuenta.children.length > 0;
+  const activeClass = cuenta.activa !== false ? 'active' : 'inactive';
+  const activeText = cuenta.activa !== false ? 'Activa' : 'Inactiva';
 
-    const tree = buildCuentaHierarchy(cuentas);
-    const hasCuentas = tree.length > 0;
-
-    const html = `
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Plan de Cuentas</h3>
-                <button class="btn btn-primary" onclick="openCuentaContableModal()">
-                    <i class="fas fa-plus"></i> Nueva Cuenta
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-toolbar">
-                    <div class="table-toolbar-left">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar cuenta..." oninput="filterCuentaTree(this.value)">
-                        </div>
-                    </div>
-                </div>
-                ${hasCuentas ? `
-                    <div class="cuentas-tree" id="cuentasTree">
-                        <ul class="cuenta-tree-root">
-                            ${tree.map(node => renderCuentaNode(node)).join('')}
-                        </ul>
-                    </div>
-                ` : `
-                    <div class="empty-state">
-                        <i class="fas fa-wallet"></i>
-                        <h3>No hay cuentas contables</h3>
-                        <p>Comienza creando el plan de cuentas</p>
-                        <button class="btn btn-primary" onclick="openCuentaContableModal()">
-                            <i class="fas fa-plus"></i> Nueva Cuenta
-                        </button>
-                    </div>
-                `}
-            </div>
-        </div>
-    `;
-
-    const container = document.getElementById('pageContent');
-    container.innerHTML = html;
-    setupCuentaTreeInteractions();
-    window.__cuentasTreeData = cuentas;
+  return '<li class="cuenta-node" data-id="' + cuenta.id + '">' +
+    '<div class="producto-row">' +
+      '<span class="td-toggle" style="width:40px">' +
+        (hasChildren ? '<button class="btn-toggle" data-id="' + cuenta.id + '"><i class="fas fa-chevron-right"></i></button>' : '') +
+      '</span>' +
+      '<span class="td-sku" style="flex:1"><strong>' + Utils.esc(cuenta.codigo || '-') + '</strong></span>' +
+      '<span class="td-nombre" style="flex:2">' + Utils.esc(cuenta.nombre || '-') + '</span>' +
+      '<span class="td-tipo" style="flex:1">' + Utils.esc(cuenta.tipoCuentaContable || '-') + '</span>' +
+      '<span class="td-estado" style="flex:0.5"><span class="status-badge ' + activeClass + '">' + activeText + '</span></span>' +
+      '<span class="td-acciones" style="width:80px">' +
+        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-cuenta" data-id="' + cuenta.id + '"><i class="fas fa-edit"></i></button>' +
+        '<button class="btn btn-sm btn-outline-danger btn-delete-cuenta" data-id="' + cuenta.id + '"><i class="fas fa-trash"></i></button>' +
+      '</span>' +
+    '</div>' +
+    (hasChildren ? '<ul class="producto-children" data-parent="' + cuenta.id + '" hidden>' + cuenta.children.map(c => renderNode(c)).join('') + '</ul>' : '') +
+  '</li>';
 }
 
-function buildCuentaHierarchy(cuentas) {
-    const map = new Map();
-    const roots = [];
+function renderTree(list) {
+  const root = document.getElementById('cuentaTreeRoot');
+  if (!root) return;
+  const tree = buildHierarchy(list);
+  if (!tree.length) {
+    root.innerHTML = '<li class="producto-node empty-tree"><div class="empty-state"><i class="fas fa-wallet"></i><p>No hay cuentas contables. Crea la primera.</p></div></li>';
+    return;
+  }
+  root.innerHTML = tree.map(n => renderNode(n)).join('');
+  bindTreeEvents();
+}
 
-    cuentas.forEach(cuenta => {
-        map.set(cuenta.id, { ...cuenta, children: [] });
+function bindTreeEvents() {
+  document.querySelectorAll('.btn-toggle').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const li = this.closest('.cuenta-node');
+      const children = li?.querySelector(':scope > .producto-children');
+      if (children) {
+        const expanded = li.classList.toggle('expanded');
+        children.hidden = !expanded;
+        this.querySelector('i')?.classList.toggle('rotated', expanded);
+      }
     });
+  });
 
-    map.forEach(cuenta => {
-        if (cuenta.cuentaPadreId) {
-            const parent = map.get(cuenta.cuentaPadreId);
-            if (parent) {
-                parent.children.push(cuenta);
-            } else {
-                roots.push(cuenta);
-            }
-        } else {
-            roots.push(cuenta);
-        }
+  document.querySelectorAll('.btn-edit-cuenta').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openCuentaModal(parseInt(this.dataset.id));
     });
+  });
 
-    const sortByCodigo = (a, b) => {
-        const codigoA = a.codigo || '';
-        const codigoB = b.codigo || '';
-        if (codigoA < codigoB) return -1;
-        if (codigoA > codigoB) return 1;
-        return 0;
-    };
-
-    const sortTree = (nodes) => {
-        nodes.sort(sortByCodigo);
-        nodes.forEach(node => {
-            if (node.children?.length) {
-                sortTree(node.children);
-            }
-        });
-    };
-
-    sortTree(roots);
-    return roots;
+  document.querySelectorAll('.btn-delete-cuenta').forEach(btn => {
+    btn.addEventListener('click', function() {
+      deleteCuenta(parseInt(this.dataset.id));
+    });
+  });
 }
 
-function renderCuentaNode(cuenta) {
-    const hasChildren = cuenta.children && cuenta.children.length > 0;
-    const tipo = cuenta.tipoCuentaContable || '-';
-    const estadoClase = cuenta.activa ? 'active' : 'inactive';
-    const estadoTexto = cuenta.activa ? 'Activa' : 'Inactiva';
-
-    return `
-        <li class="cuenta-node" data-codigo="${(cuenta.codigo || '').toLowerCase()}" data-nombre="${(cuenta.nombre || '').toLowerCase()}">
-            <div class="cuenta-row">
-                <div class="cuenta-toggle-wrapper">
-                    ${hasChildren ? `
-                        <button type="button" class="cuenta-toggle" data-id="${cuenta.id}" aria-expanded="false">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    ` : '<span class="cuenta-spacer"></span>'}
-                </div>
-                <div class="cuenta-details">
-                    <div class="cuenta-primary">
-                        <span class="cuenta-codigo">${cuenta.codigo || '-'}</span>
-                        <span class="cuenta-nombre">${cuenta.nombre || '-'}</span>
-                    </div>
-                    <div class="cuenta-meta">
-                        <span class="cuenta-tipo">${tipo}</span>
-                        <span class="status-badge ${estadoClase}">${estadoTexto}</span>
-                    </div>
-                </div>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="editCuentaContable(${cuenta.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteCuentaContable(${cuenta.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            ${hasChildren ? `
-                <ul class="cuenta-children" data-parent="${cuenta.id}" hidden>
-                    ${cuenta.children.map(child => renderCuentaNode(child)).join('')}
-                </ul>
-            ` : ''}
-        </li>
-    `;
+function filterCuentas(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) { renderTree(cuentasTreeData); return; }
+  const filtered = cuentasTreeData.filter(c =>
+    (c.codigo || '').toLowerCase().includes(q) ||
+    (c.nombre || '').toLowerCase().includes(q) ||
+    (c.tipoCuentaContable || '').toLowerCase().includes(q)
+  );
+  renderTree(filtered);
 }
 
-function setupCuentaTreeInteractions() {
-    const tree = document.getElementById('cuentasTree');
-    if (!tree) return;
+async function openCuentaModal(id) {
+  editingCuentaId = id;
+  const titleEl = document.getElementById('cuentaModalTitle');
+  const btnGuardar = document.getElementById('btnGuardarCuenta');
+  const idInput = document.getElementById('cuentaId');
 
-    tree.addEventListener('click', (event) => {
-        const toggle = event.target.closest('.cuenta-toggle');
-        if (!toggle) return;
+  document.getElementById('cuentaCodigo').value = '';
+  document.getElementById('cuentaNombre').value = '';
+  document.getElementById('cuentaTipo').value = 'ACTIVO';
+  document.getElementById('cuentaActiva').checked = true;
 
-        const node = toggle.closest('.cuenta-node');
-        const children = node.querySelector(':scope > .cuenta-children');
-        if (!children) return;
+  await loadCuentaPadreOptions(null);
 
-        const isExpanded = node.classList.toggle('expanded');
-        toggle.setAttribute('aria-expanded', isExpanded);
-        children.hidden = !isExpanded;
+  if (id) {
+    titleEl.textContent = 'Editar Cuenta Contable';
+    btnGuardar.textContent = 'Actualizar';
+    try {
+      const c = await API.get('/cuenta-contable/' + id);
+      document.getElementById('cuentaCodigo').value = c.codigo || '';
+      document.getElementById('cuentaNombre').value = c.nombre || '';
+      document.getElementById('cuentaTipo').value = c.tipoCuentaContable || 'ACTIVO';
+      document.getElementById('cuentaActiva').checked = c.activa !== false;
+      idInput.value = id;
+      await loadCuentaPadreOptions(c.cuentaPadreId || null);
+    } catch (e) {
+      Utils.showToast('Error al cargar cuenta: ' + e.message, 'error');
+      return;
+    }
+  } else {
+    titleEl.textContent = 'Nueva Cuenta Contable';
+    btnGuardar.textContent = 'Guardar';
+    idInput.value = '';
+  }
 
-        const icon = toggle.querySelector('i');
-        if (icon) {
-            icon.classList.toggle('rotated', isExpanded);
-        }
-    });
+  new bootstrap.Modal(document.getElementById('cuentaModal')).show();
 }
 
-window.filterCuentaTree = function(query = '') {
-    const data = window.__cuentasTreeData || [];
-    const treeContainer = document.getElementById('cuentasTree');
-    if (!treeContainer) return;
-
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) {
-        renderCuentasTree(data);
-        return;
-    }
-
-    const matches = data.filter(cuenta => {
-        const codigo = (cuenta.codigo || '').toLowerCase();
-        const nombre = (cuenta.nombre || '').toLowerCase();
-        const tipo = (cuenta.tipoCuentaContable || '').toLowerCase();
-        return codigo.includes(normalized) || nombre.includes(normalized) || tipo.includes(normalized);
+async function loadCuentaPadreOptions(selectedId) {
+  const select = document.getElementById('cuentaPadre');
+  select.innerHTML = '<option value="">Ninguna (cuenta ra&iacute;z)</option>';
+  try {
+    const resp = await API.get('/cuenta-contable' + buildParams(0, 300));
+    const list = resp.content || resp || [];
+    list.forEach(c => {
+      if (c.id === editingCuentaId) return;
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = (c.codigo || '') + ' - ' + (c.nombre || '');
+      if (selectedId && c.id === selectedId) opt.selected = true;
+      select.appendChild(opt);
     });
+  } catch (_) {}
+}
 
-    // For search we simplify to flat list without hierarchy
-    const html = `
-        <div class="cuentas-tree cuentas-tree-search" id="cuentasTree">
-            <ul class="cuenta-tree-root">
-                ${matches.length ? matches.map(cuenta => renderCuentaNode({ ...cuenta, children: [] })).join('') : '<li class="cuenta-empty">Sin resultados</li>'}
-            </ul>
-        </div>
-    `;
-    treeContainer.outerHTML = html;
-    setupCuentaTreeInteractions();
-};
+async function saveCuenta() {
+  const id = document.getElementById('cuentaId').value;
+  const data = {
+    codigo: document.getElementById('cuentaCodigo').value.trim(),
+    nombre: document.getElementById('cuentaNombre').value.trim(),
+    tipoCuentaContable: document.getElementById('cuentaTipo').value,
+    cuentaPadreId: document.getElementById('cuentaPadre').value || null,
+    activa: document.getElementById('cuentaActiva').checked,
+  };
 
-window.openCuentaContableModal = function() {
-    openModal('Nueva Cuenta Contable', `
-        <form id="cuentaForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Código</label>
-                    <input type="text" class="form-control" name="codigo" placeholder="ej. 1001" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nombre</label>
-                    <input type="text" class="form-control" name="nombre" placeholder="ej. Caja" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Tipo de Cuenta</label>
-                    <select class="form-control" name="tipoCuentaContable" required>
-                        <option value="ACTIVO">Activo</option>
-                        <option value="PASIVO">Pasivo</option>
-                        <option value="CAPITAL">Capital</option>
-                        <option value="INGRESO">Ingreso</option>
-                        <option value="GASTO">Gasto</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">ID Cuenta Padre</label>
-                    <input type="number" class="form-control" name="cuentaPadreId">
-                </div>
-            </div>
-        </form>
-    `, `
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveCuentaContable()">Guardar</button>
-    `);
-};
+  if (!data.codigo || !data.nombre) {
+    Utils.showToast('C&oacute;digo y nombre son obligatorios', 'warning');
+    return;
+  }
 
-window.saveCuentaContable = async function() {
-    const form = document.getElementById('cuentaForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    data.cuentaPadreId = data.cuentaPadreId ? parseInt(data.cuentaPadreId) : null;
-    
-    try {
-        showLoading();
-        await api.createCuentaContable(data);
-        showToast('Cuenta contable creada exitosamente', 'success');
-        closeModal();
-        loadCuentas();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
+  try {
+    if (id) {
+      await API.put('/cuenta-contable/' + id, data);
+      Utils.showToast('Cuenta actualizada', 'success');
+    } else {
+      await API.post('/cuenta-contable', data);
+      Utils.showToast('Cuenta creada', 'success');
     }
-};
+    bootstrap.Modal.getInstance(document.getElementById('cuentaModal'))?.hide();
+    loadCuentas();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}
 
-window.editCuentaContable = async function(id) {
-    try {
-        const cuenta = await api.getCuentaContable(id);
-        openModal('Editar Cuenta Contable', `
-            <form id="cuentaForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Código</label>
-                        <input type="text" class="form-control" name="codigo" value="${cuenta.codigo || ''}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" class="form-control" name="nombre" value="${cuenta.nombre || ''}" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Tipo de Cuenta</label>
-                        <select class="form-control" name="tipoCuentaContable" required>
-                            <option value="ACTIVO" ${cuenta.tipoCuentaContable === 'ACTIVO' ? 'selected' : ''}>Activo</option>
-                            <option value="PASIVO" ${cuenta.tipoCuentaContable === 'PASIVO' ? 'selected' : ''}>Pasivo</option>
-                            <option value="CAPITAL" ${cuenta.tipoCuentaContable === 'CAPITAL' ? 'selected' : ''}>Capital</option>
-                            <option value="INGRESO" ${cuenta.tipoCuentaContable === 'INGRESO' ? 'selected' : ''}>Ingreso</option>
-                            <option value="GASTO" ${cuenta.tipoCuentaContable === 'GASTO' ? 'selected' : ''}>Gasto</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ID Cuenta Padre</label>
-                        <input type="number" class="form-control" name="cuentaPadreId" value="${cuenta.cuentaPadreId || ''}">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" name="activa" ${cuenta.activa ? 'checked' : ''}> Activa
-                    </label>
-                </div>
-            </form>
-        `, `
-            <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="updateCuentaContable(${id})">Actualizar</button>
-        `);
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-};
-
-window.updateCuentaContable = async function(id) {
-    const form = document.getElementById('cuentaForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    data.cuentaPadreId = data.cuentaPadreId ? parseInt(data.cuentaPadreId) : null;
-    data.activa = form.querySelector('input[name="activa"]').checked;
-    
-    try {
-        showLoading();
-        await api.updateCuentaContable(id, data);
-        showToast('Cuenta contable actualizada exitosamente', 'success');
-        closeModal();
-        loadCuentas();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
-
-window.deleteCuentaContable = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta cuenta contable?')) return;
-    
-    try {
-        showLoading();
-        await api.deleteCuentaContable(id);
-        showToast('Cuenta contable eliminada exitosamente', 'success');
-        loadCuentas();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+async function deleteCuenta(id) {
+  const confirmed = await Utils.confirmAction('&iquest;Eliminar esta cuenta contable?', 'Confirmar', 'Eliminar');
+  if (!confirmed) return;
+  try {
+    await API.del('/cuenta-contable/' + id);
+    Utils.showToast('Cuenta eliminada', 'success');
+    loadCuentas();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}

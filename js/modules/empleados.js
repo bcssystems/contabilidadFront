@@ -1,221 +1,136 @@
-// ========================================
-// BC Systems - Módulo Empleados
-// ========================================
+let editingEmpleadoId = null;
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+const PAGE_SIZE = 20;
 
-window.initEmpleados = function() {
-    loadEmpleados(0);
-};
-
-async function loadEmpleados(page = 0) {
-    showLoading();
-    try {
-        const data = await api.getEmpleados(page, paginationState.size, paginationState.sortBy, paginationState.sortDir);
-        renderEmpleadosTable(data);
-    } catch (error) {
-        console.error('Error cargando empleados:', error);
-        showToast('Error al cargar empleados: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
+export function init() {
+  currentPage = 0;
+  loadEmpleados();
+  bindEvents();
 }
 
-function renderEmpleadosTable(data) {
-    const items = data.content.map(item => {
-        const fullName = [item.nombre, item.primerApellido, item.segundoApellido].filter(Boolean).join(' ');
-        return `
-        <tr>
-            <td>${item.id}</td>
-            <td>${fullName}</td>
-            <td>${item.position || '-'}</td>
-            <td><span class="status-badge ${item.activo ? 'active' : 'inactive'}">${item.activo ? 'Activo' : 'Inactivo'}</span></td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="editEmpleado(${item.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `; }).join('');
-
-    const html = `
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Gestión de Empleados</h3>
-                <button class="btn btn-primary" onclick="openEmpleadoModal()">
-                    <i class="fas fa-plus"></i> Nuevo Empleado
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-toolbar">
-                    <div class="table-toolbar-left">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar empleado...">
-                        </div>
-                    </div>
-                    <div class="table-toolbar-right">
-                        <select class="select-control" onchange="changePageSize(this.value, 'empleados')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
-                        </select>
-                    </div>
-                </div>
-                ${data.content.length === 0 ? `
-                    <div class="empty-state">
-                        <i class="fas fa-user-tie"></i>
-                        <h3>No hay empleados</h3>
-                        <p>Comienza agregando un nuevo empleado</p>
-                        <button class="btn btn-primary" onclick="openEmpleadoModal()">
-                            <i class="fas fa-plus"></i> Nuevo Empleado
-                        </button>
-                    </div>
-                ` : `
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Puesto</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items}
-                            </tbody>
-                        </table>
-                    </div>
-                    ${renderPagination(data, 'empleados')}
-                `}
-            </div>
-        </div>
-    `;
-
-    document.getElementById('pageContent').innerHTML = html;
+function bindEvents() {
+  document.getElementById('btnNuevoEmpleado')?.addEventListener('click', () => openEmpleadoModal(null));
+  document.getElementById('btnGuardarEmpleado')?.addEventListener('click', saveEmpleado);
+  document.getElementById('searchEmpleado')?.addEventListener('input', Utils.debounce(function() { currentPage = 0; loadEmpleados(); }, 300));
+  document.getElementById('filterPuesto')?.addEventListener('change', function() { currentPage = 0; loadEmpleados(); });
+  document.getElementById('empleadoModal')?.addEventListener('hidden.bs.modal', () => { editingEmpleadoId = null; });
 }
 
-window.openEmpleadoModal = function() {
-    openModal('Nuevo Empleado', `
-        <form id="empleadoForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Nombre</label>
-                    <input type="text" class="form-control" name="nombre" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Primer Apellido</label>
-                    <input type="text" class="form-control" name="primerApellido" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Segundo Apellido</label>
-                <input type="text" class="form-control" name="segundoApellido" placeholder="Opcional">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Puesto</label>
-                <select class="form-control" name="position" required>
-                    <option value="VENDEDOR">Vendedor</option>
-                    <option value="TECNICO">Técnico</option>
-                    <option value="COBRANZA">Cobranza</option>
-                </select>
-            </div>
-        </form>
-    `, `
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveEmpleado()">Guardar</button>
-    `);
-};
+async function loadEmpleados() {
+  const tbody = document.getElementById('tableEmpleadosBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
+  try {
+    const q = document.getElementById('searchEmpleado')?.value?.trim() || '';
+    const p = document.getElementById('filterPuesto')?.value || '';
+    let params = '?page=' + currentPage + '&size=' + PAGE_SIZE + '&sort=id,asc';
+    if (q) params += '&search=' + encodeURIComponent(q);
+    if (p) params += '&position=' + encodeURIComponent(p);
+    const resp = await API.get('/empleado' + params);
+    renderTable(resp);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+  }
+}
 
-window.saveEmpleado = async function() {
-    const form = document.getElementById('empleadoForm');
-    const formData = new FormData(form);
-    const data = {
-        nombre: (formData.get('nombre') || '').trim(),
-        primerApellido: (formData.get('primerApellido') || '').trim(),
-        segundoApellido: (formData.get('segundoApellido') || '').trim() || null,
-        position: formData.get('position'),
-        personType: 'EMPLEADO'
-    };
+function renderTable(data) {
+  const tbody = document.getElementById('tableEmpleadosBody');
+  if (!tbody) return;
+  const list = data.content || [];
+  totalPages = data.totalPages || 0;
+  totalElements = data.totalElements || 0;
 
-    try {
-        showLoading();
-        await api.createEmpleado(data);
-        showToast('Empleado creado exitosamente', 'success');
-        closeModal();
-        loadEmpleados();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay empleados</p></div></td></tr>';
+    renderPagination();
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    const fullName = [item.nombre, item.primerApellido, item.segundoApellido].filter(Boolean).join(' ');
+    return '<tr>' +
+      '<td>' + item.id + '</td>' +
+      '<td>' + Utils.esc(fullName) + '</td>' +
+      '<td>' + Utils.esc(item.position || '-') + '</td>' +
+      '<td><span class="status-badge ' + (item.activo ? 'active' : 'inactive') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+      '<td><button class="btn btn-sm btn-outline-secondary btn-edit-emp" data-id="' + item.id + '"><i class="fas fa-edit"></i></button></td>' +
+    '</tr>';
+  }).join('');
+
+  tbody.querySelectorAll('.btn-edit-emp').forEach(b => b.addEventListener('click', () => openEmpleadoModal(parseInt(b.dataset.id))));
+  renderPagination();
+}
+
+function renderPagination() {
+  const container = document.getElementById('paginationEmpleados');
+  if (!container) return;
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+  container.innerHTML =
+    '<div class="d-flex justify-content-between align-items-center"><small class="text-muted">P&aacute;gina ' + (currentPage + 1) + ' de ' + totalPages + ' (' + totalElements + ' registros)</small>' +
+    '<div class="btn-group">' +
+      '<button class="btn btn-sm btn-outline-secondary" id="prevPageEmp" ' + (currentPage === 0 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>' +
+      '<button class="btn btn-sm btn-outline-secondary" id="nextPageEmp" ' + (currentPage >= totalPages - 1 ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>' +
+    '</div></div>';
+  document.getElementById('prevPageEmp')?.addEventListener('click', () => { if (currentPage > 0) { currentPage--; loadEmpleados(); } });
+  document.getElementById('nextPageEmp')?.addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; loadEmpleados(); } });
+}
+
+function openEmpleadoModal(id) {
+  editingEmpleadoId = id;
+  document.getElementById('empleadoId').value = '';
+  document.getElementById('empleadoNombre').value = '';
+  document.getElementById('empleadoApellido1').value = '';
+  document.getElementById('empleadoApellido2').value = '';
+  document.getElementById('empleadoPuesto').value = 'VENDEDOR';
+  document.getElementById('empleadoActivo').checked = true;
+
+  if (id) {
+    document.getElementById('empleadoModalTitle').textContent = 'Editar Empleado';
+    document.getElementById('btnGuardarEmpleado').textContent = 'Actualizar';
+    API.get('/empleado/' + id).then(e => {
+      document.getElementById('empleadoNombre').value = e.nombre || '';
+      document.getElementById('empleadoApellido1').value = e.primerApellido || '';
+      document.getElementById('empleadoApellido2').value = e.segundoApellido || '';
+      document.getElementById('empleadoPuesto').value = e.position || 'VENDEDOR';
+      document.getElementById('empleadoActivo').checked = e.activo !== false;
+      document.getElementById('empleadoId').value = id;
+    }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
+  } else {
+    document.getElementById('empleadoModalTitle').textContent = 'Nuevo Empleado';
+    document.getElementById('btnGuardarEmpleado').textContent = 'Guardar';
+  }
+  new bootstrap.Modal(document.getElementById('empleadoModal')).show();
+}
+
+async function saveEmpleado() {
+  const id = document.getElementById('empleadoId').value;
+  const data = {
+    nombre: document.getElementById('empleadoNombre').value.trim(),
+    primerApellido: document.getElementById('empleadoApellido1').value.trim(),
+    segundoApellido: document.getElementById('empleadoApellido2').value.trim() || null,
+    position: document.getElementById('empleadoPuesto').value,
+    personType: 'EMPLEADO',
+  };
+  if (id) data.activo = document.getElementById('empleadoActivo').checked;
+
+  if (!data.nombre || !data.primerApellido) {
+    Utils.showToast('Nombre y primer apellido son obligatorios', 'warning');
+    return;
+  }
+
+  try {
+    if (id) {
+      await API.put('/empleado/' + id, data);
+      Utils.showToast('Empleado actualizado', 'success');
+    } else {
+      await API.post('/empleado', data);
+      Utils.showToast('Empleado creado', 'success');
     }
-};
-
-window.editEmpleado = async function(id) {
-    try {
-        const empleado = await api.getEmpleado(id);
-        openModal('Editar Empleado', `
-            <form id="empleadoForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" class="form-control" name="nombre" value="${empleado.nombre || ''}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Primer Apellido</label>
-                        <input type="text" class="form-control" name="primerApellido" value="${empleado.primerApellido || ''}" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Segundo Apellido</label>
-                    <input type="text" class="form-control" name="segundoApellido" value="${empleado.segundoApellido || ''}" placeholder="Opcional">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Puesto</label>
-                    <select class="form-control" name="position" required>
-                        <option value="VENDEDOR" ${empleado.position === 'VENDEDOR' ? 'selected' : ''}>Vendedor</option>
-                        <option value="TECNICO" ${empleado.position === 'TECNICO' ? 'selected' : ''}>Técnico</option>
-                        <option value="COBRANZA" ${empleado.position === 'COBRANZA' ? 'selected' : ''}>Cobranza</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" name="activo" ${empleado.activo ? 'checked' : ''}> Activo
-                    </label>
-                </div>
-            </form>
-        `, `
-            <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="updateEmpleado(${id})">Actualizar</button>
-        `);
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-};
-
-window.updateEmpleado = async function(id) {
-    const form = document.getElementById('empleadoForm');
-    const formData = new FormData(form);
-    const data = {
-        nombre: (formData.get('nombre') || '').trim(),
-        primerApellido: (formData.get('primerApellido') || '').trim(),
-        segundoApellido: (formData.get('segundoApellido') || '').trim() || null,
-        position: formData.get('position'),
-        activo: form.querySelector('input[name="activo"]').checked,
-        personType: 'EMPLEADO'
-    };
-
-    try {
-        showLoading();
-        await api.updateEmpleado(id, data);
-        showToast('Empleado actualizado exitosamente', 'success');
-        closeModal();
-        loadEmpleados();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+    bootstrap.Modal.getInstance(document.getElementById('empleadoModal'))?.hide();
+    loadEmpleados();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}

@@ -1,0 +1,79 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h4><i class="fas fa-exchange-alt me-2" style="color:var(--primary)"></i>Movimientos Contables</h4>
+      <small class="text-muted">Detalle de movimientos por cuenta</small>
+    </div>
+    <button class="btn btn-primary ripple" id="btnNuevoMovimiento">
+      <i class="fas fa-plus me-1"></i> Nuevo Movimiento
+    </button>
+  </div>
+
+  <div class="filter-bar filter-bar-2cols">
+    <div class="input-group">
+      <span class="input-group-text"><i class="fas fa-search"></i></span>
+      <input type="text" class="form-control" id="searchMovimiento" placeholder="Buscar por cuenta...">
+    </div>
+    <div></div>
+  </div>
+
+  <div class="panel-card overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-custom mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>C&oacute;digo</th>
+            <th>Cuenta</th>
+            <th>Debe</th>
+            <th>Haber</th>
+            <th style="width:120px"></th>
+          </tr>
+        </thead>
+        <tbody id="tableMovimientosBody">
+          <tr><td colspan="6"><div class="empty-state"><i class="fas fa-exchange-alt"></i><p>Cargando...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mt-3" id="paginationMovimientos"></div>
+</div>
+
+<div class="modal fade" id="movimientoModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="movimientoModalTitle">Nuevo Movimiento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formMovimiento">
+          <input type="hidden" id="movimientoId">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Debe</label>
+              <input type="number" class="form-control" id="movimientoDebe" step="0.01" min="0" value="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Haber</label>
+              <input type="number" class="form-control" id="movimientoHaber" step="0.01" min="0" value="0">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cuenta Contable <span class="text-danger">*</span></label>
+            <select class="form-select" id="movimientoCuenta"></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Asiento <span class="text-danger">*</span></label>
+            <select class="form-select" id="movimientoAsiento"></select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary px-4 ripple" id="btnGuardarMovimiento">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

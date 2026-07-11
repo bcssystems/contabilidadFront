@@ -1,84 +1,104 @@
-// ========================================
-// BC Systems - Auth Module
-// ========================================
+const Auth = {
+  init() {
+    this.bindEvents();
+    this.checkAuthStatus();
+  },
 
-// Login Form Handler
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('loginForm');
-    
+  bindEvents() {
+    const loginForm = document.getElementById('login-form');
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.login();
+      });
     }
-});
 
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const submitBtn = document.querySelector('.btn-login');
-    const errorDiv = document.getElementById('loginError');
-    
-    // Show loading
-    submitBtn.classList.add('loading');
-    errorDiv.classList.remove('show');
-    
-    try {
-        const success = await api.login(username, password);
-        
-        if (success) {
-            // Get user info with role
-            try {
-                const userInfo = await api.getMe();
-                localStorage.setItem('user', JSON.stringify({
-                    username,
-                    rol: userInfo.rol,
-                    nombre: userInfo.nombre,
-                    idUsuario: userInfo.idUsuario
-                }));
-            } catch (e) {
-                localStorage.setItem('user', JSON.stringify({ username }));
-            }
-            
-            // Redirect to dashboard
-            window.location.href = 'dashboard.html';
+    const toggleBtn = document.getElementById('toggle-password');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const pass = document.getElementById('password');
+        const icon = document.getElementById('toggle-password-icon');
+        if (pass.type === 'password') {
+          pass.type = 'text';
+          icon.className = 'fas fa-eye-slash';
         } else {
-            errorDiv.classList.add('show');
+          pass.type = 'password';
+          icon.className = 'fas fa-eye';
         }
-    } catch (error) {
-        console.error('Login error:', error);
-        errorDiv.classList.add('show');
-        errorDiv.querySelector('span').textContent = error.message || 'Error al iniciar sesión';
+      });
+    }
+  },
+
+  async login() {
+    const usuario = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('btn-login');
+    const btnText = document.getElementById('btn-login-text');
+    const btnLoader = document.getElementById('btn-login-loader');
+
+    if (!usuario || !password) {
+      Utils.showToast('Ingresa usuario y contraseña', 'warning');
+      return;
+    }
+
+    btn.disabled = true;
+    btnText.classList.add('d-none');
+    btnLoader.classList.remove('d-none');
+
+    try {
+      const response = await API.post('/auth/login', { email: usuario, password });
+
+      localStorage.setItem('access_token', response.access_token || response.accessToken || response.token);
+      localStorage.setItem('refresh_token', response.refresh_token || response.refreshToken || '');
+      localStorage.setItem('username', response.username || usuario);
+      localStorage.setItem('userNombre', response.nombre || response.username || usuario);
+      localStorage.setItem('userRol', response.rol || 'USER');
+
+      Utils.showToast('Inicio de sesión exitoso', 'success');
+      this.checkAuthStatus();
+    } catch (err) {
+      Utils.showToast(err.message, 'error');
     } finally {
-        submitBtn.classList.remove('loading');
+      btn.disabled = false;
+      btnText.classList.remove('d-none');
+      btnLoader.classList.add('d-none');
     }
-}
+  },
 
-// Check authentication
-function checkAuth() {
-    if (!api.isAuthenticated()) {
+  logout() {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      API.post('/auth/logout').catch(() => {});
+    }
+    localStorage.clear();
+    Utils.showToast('Sesión cerrada', 'info');
+    this.checkAuthStatus();
+  },
+
+  checkAuthStatus() {
+    const token = localStorage.getItem('access_token');
+    const loginView = document.getElementById('login-view');
+    const dashboardView = document.getElementById('dashboard-view');
+
+    if (!loginView || !dashboardView) {
+      if (!token) {
         window.location.href = 'index.html';
-        return false;
+      }
+      return;
     }
-    return true;
-}
 
-// Get current user
-function getCurrentUser() {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-}
-
-// Logout
-function logout() {
-    api.logout();
-    localStorage.removeItem('user');
-    window.location.href = 'index.html';
-}
-
-// Export functions
-window.auth = {
-    checkAuth,
-    getCurrentUser,
-    logout
+    if (token && !API.tokenExpirado()) {
+      loginView.classList.add('d-none');
+      dashboardView.classList.remove('d-none');
+      if (typeof Dashboard !== 'undefined') {
+        Dashboard.init();
+      }
+    } else {
+      if (token) {
+        localStorage.clear();
+      }
+      loginView.classList.remove('d-none');
+      dashboardView.classList.add('d-none');
+    }
+  },
 };

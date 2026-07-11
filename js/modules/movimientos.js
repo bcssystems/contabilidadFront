@@ -1,225 +1,179 @@
-// ========================================
-// BC Systems - Módulo Movimientos Contables
-// ========================================
+let editingMovimientoId = null;
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+const PAGE_SIZE = 20;
 
-window.initMovimientos = function() {
-    loadMovimientos(0);
-};
-
-async function loadMovimientos(page = 0) {
-    showLoading();
-    try {
-        const data = await api.getMovimientosContables(page, paginationState.size, paginationState.sortBy, paginationState.sortDir);
-        renderMovimientosTable(data);
-    } catch (error) {
-        console.error('Error cargando movimientos contables:', error);
-        showToast('Error al cargar movimientos contables: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
+export function init() {
+  currentPage = 0;
+  loadMovimientos();
+  bindEvents();
 }
 
-function renderMovimientosTable(data) {
-    const items = data.content.map(item => `
-        <tr>
-            <td>${item.id}</td>
-            <td>${item.cuentaCodigo || '-'}</td>
-            <td>${item.cuentaNombre || '-'}</td>
-            <td>${formatCurrency(item.debe)}</td>
-            <td>${formatCurrency(item.haber)}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="editMovimiento(${item.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteMovimiento(${item.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
-    const html = `
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Movimientos Contables</h3>
-                <button class="btn btn-primary" onclick="openMovimientoModal()">
-                    <i class="fas fa-plus"></i> Nuevo Movimiento
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-toolbar">
-                    <div class="table-toolbar-left">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar movimiento...">
-                        </div>
-                    </div>
-                    <div class="table-toolbar-right">
-                        <select class="select-control" onchange="changePageSize(this.value, 'movimientos')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
-                        </select>
-                    </div>
-                </div>
-                ${data.content.length === 0 ? `
-                    <div class="empty-state">
-                        <i class="fas fa-exchange-alt"></i>
-                        <h3>No hay movimientos</h3>
-                        <p>Comienza registrando un nuevo movimiento</p>
-                        <button class="btn btn-primary" onclick="openMovimientoModal()">
-                            <i class="fas fa-plus"></i> Nuevo Movimiento
-                        </button>
-                    </div>
-                ` : `
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <th>ID</th>
-                                    <tr>
-                                    <th>Código</th>
-                                    <th>Cuenta</th>
-                                    <th>Debe</th>
-                                    <th>Haber</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items}
-                            </tbody>
-                        </table>
-                    </div>
-                    ${renderPagination(data, 'movimientos')}
-                `}
-            </div>
-        </div>
-    `;
-
-    document.getElementById('pageContent').innerHTML = html;
+function bindEvents() {
+  document.getElementById('btnNuevoMovimiento')?.addEventListener('click', () => openMovimientoModal(null));
+  document.getElementById('btnGuardarMovimiento')?.addEventListener('click', saveMovimiento);
+  document.getElementById('searchMovimiento')?.addEventListener('input', Utils.debounce(function() {
+    currentPage = 0;
+    loadMovimientos();
+  }, 300));
+  document.getElementById('movimientoModal')?.addEventListener('hidden.bs.modal', () => { editingMovimientoId = null; });
 }
 
-window.openMovimientoModal = function() {
-    openModal('Nuevo Movimiento Contable', `
-        <form id="movimientoForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Debe</label>
-                    <input type="number" step="0.01" class="form-control" name="debe" value="0">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Haber</label>
-                    <input type="number" step="0.01" class="form-control" name="haber" value="0">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">ID Cuenta Contable</label>
-                    <input type="number" class="form-control" name="cuentaContableId" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">ID Asiento</label>
-                    <input type="number" class="form-control" name="asientoId" required>
-                </div>
-            </div>
-        </form>
-    `, `
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveMovimiento()">Guardar</button>
-    `);
-};
+async function loadMovimientos() {
+  const tbody = document.getElementById('tableMovimientosBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exchange-alt"></i><p>Cargando...</p></div></td></tr>';
+  try {
+    const q = document.getElementById('searchMovimiento')?.value?.trim() || '';
+    let params = '?page=' + currentPage + '&size=' + PAGE_SIZE + '&sort=id,desc';
+    if (q) params += '&search=' + encodeURIComponent(q);
+    const resp = await API.get('/movimiento-contable' + params);
+    renderTable(resp);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+  }
+}
 
-window.saveMovimiento = async function() {
-    const form = document.getElementById('movimientoForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    data.debe = parseFloat(data.debe) || 0;
-    data.haber = parseFloat(data.haber) || 0;
-    data.cuentaContableId = parseInt(data.cuentaContableId);
-    data.asientoId = parseInt(data.asientoId);
-    
-    try {
-        showLoading();
-        await api.createMovimientoContable(data);
-        showToast('Movimiento contable creado exitosamente', 'success');
-        closeModal();
-        loadMovimientos();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+function renderTable(data) {
+  const tbody = document.getElementById('tableMovimientosBody');
+  if (!tbody) return;
+  const list = data.content || [];
+  totalPages = data.totalPages || 0;
+  totalElements = data.totalElements || 0;
 
-window.editMovimiento = async function(id) {
-    try {
-        const movimiento = await api.getMovimientoContable(id);
-        openModal('Editar Movimiento Contable', `
-            <form id="movimientoForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Debe</label>
-                        <input type="number" step="0.01" class="form-control" name="debe" value="${movimiento.debe || 0}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Haber</label>
-                        <input type="number" step="0.01" class="form-control" name="haber" value="${movimiento.haber || 0}">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">ID Cuenta Contable</label>
-                        <input type="number" class="form-control" name="cuentaContableId" value="${movimiento.cuentaContableId || ''}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ID Asiento</label>
-                        <input type="number" class="form-control" name="asientoId" value="${movimiento.asientoId || ''}" required>
-                    </div>
-                </div>
-            </form>
-        `, `
-            <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="updateMovimiento(${id})">Actualizar</button>
-        `);
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-};
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exchange-alt"></i><p>No hay movimientos</p></div></td></tr>';
+    renderPagination();
+    return;
+  }
 
-window.updateMovimiento = async function(id) {
-    const form = document.getElementById('movimientoForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    data.debe = parseFloat(data.debe) || 0;
-    data.haber = parseFloat(data.haber) || 0;
-    data.cuentaContableId = parseInt(data.cuentaContableId);
-    data.asientoId = parseInt(data.asientoId);
-    
-    try {
-        showLoading();
-        await api.updateMovimientoContable(id, data);
-        showToast('Movimiento contable actualizado exitosamente', 'success');
-        closeModal();
-        loadMovimientos();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+  tbody.innerHTML = list.map(item =>
+    '<tr>' +
+      '<td>' + item.id + '</td>' +
+      '<td>' + Utils.esc(item.cuentaCodigo || '-') + '</td>' +
+      '<td>' + Utils.esc(item.cuentaNombre || '-') + '</td>' +
+      '<td>' + Utils.formatCurrency(item.debe) + '</td>' +
+      '<td>' + Utils.formatCurrency(item.haber) + '</td>' +
+      '<td>' +
+        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-mov" data-id="' + item.id + '"><i class="fas fa-edit"></i></button>' +
+        '<button class="btn btn-sm btn-outline-danger btn-delete-mov" data-id="' + item.id + '"><i class="fas fa-trash"></i></button>' +
+      '</td>' +
+    '</tr>'
+  ).join('');
 
-window.deleteMovimiento = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar este movimiento contable?')) return;
-    
+  tbody.querySelectorAll('.btn-edit-mov').forEach(b => b.addEventListener('click', () => openMovimientoModal(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.btn-delete-mov').forEach(b => b.addEventListener('click', () => deleteMovimiento(parseInt(b.dataset.id))));
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const container = document.getElementById('paginationMovimientos');
+  if (!container) return;
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+  container.innerHTML =
+    '<div class="d-flex justify-content-between align-items-center"><small class="text-muted">P&aacute;gina ' + (currentPage + 1) + ' de ' + totalPages + ' (' + totalElements + ' registros)</small>' +
+    '<div class="btn-group">' +
+      '<button class="btn btn-sm btn-outline-secondary" id="prevPageMov" ' + (currentPage === 0 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>' +
+      '<button class="btn btn-sm btn-outline-secondary" id="nextPageMov" ' + (currentPage >= totalPages - 1 ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>' +
+    '</div></div>';
+  document.getElementById('prevPageMov')?.addEventListener('click', () => { if (currentPage > 0) { currentPage--; loadMovimientos(); } });
+  document.getElementById('nextPageMov')?.addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; loadMovimientos(); } });
+}
+
+async function openMovimientoModal(id) {
+  editingMovimientoId = id;
+  document.getElementById('movimientoId').value = '';
+  document.getElementById('movimientoDebe').value = '0';
+  document.getElementById('movimientoHaber').value = '0';
+
+  await loadCuentasSelect();
+  await loadAsientosSelect();
+
+  if (id) {
+    document.getElementById('movimientoModalTitle').textContent = 'Editar Movimiento';
+    document.getElementById('btnGuardarMovimiento').textContent = 'Actualizar';
     try {
-        showLoading();
-        await api.deleteMovimientoContable(id);
-        showToast('Movimiento contable eliminado exitosamente', 'success');
-        loadMovimientos();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
+      const m = await API.get('/movimiento-contable/' + id);
+      document.getElementById('movimientoDebe').value = m.debe || 0;
+      document.getElementById('movimientoHaber').value = m.haber || 0;
+      document.getElementById('movimientoCuenta').value = m.cuentaContableId || '';
+      document.getElementById('movimientoAsiento').value = m.asientoId || '';
+      document.getElementById('movimientoId').value = id;
+    } catch (e) { Utils.showToast('Error: ' + e.message, 'error'); return; }
+  } else {
+    document.getElementById('movimientoModalTitle').textContent = 'Nuevo Movimiento';
+    document.getElementById('btnGuardarMovimiento').textContent = 'Guardar';
+  }
+  new bootstrap.Modal(document.getElementById('movimientoModal')).show();
+}
+
+async function loadCuentasSelect() {
+  const select = document.getElementById('movimientoCuenta');
+  select.innerHTML = '<option value="">Seleccionar cuenta...</option>';
+  try {
+    const resp = await API.get('/cuenta-contable?page=0&size=300&sort=id,asc');
+    const list = resp.content || resp || [];
+    list.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = (c.codigo || '') + ' - ' + (c.nombre || '');
+      select.appendChild(opt);
+    });
+  } catch (_) {}
+}
+
+async function loadAsientosSelect() {
+  const select = document.getElementById('movimientoAsiento');
+  select.innerHTML = '<option value="">Seleccionar asiento...</option>';
+  try {
+    const resp = await API.get('/asiento-contable?page=0&size=100&sort=id,desc');
+    const list = resp.content || [];
+    list.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = '#' + a.id + ' - ' + (a.referencia || '');
+      select.appendChild(opt);
+    });
+  } catch (_) {}
+}
+
+async function saveMovimiento() {
+  const id = document.getElementById('movimientoId').value;
+  const data = {
+    debe: parseFloat(document.getElementById('movimientoDebe').value) || 0,
+    haber: parseFloat(document.getElementById('movimientoHaber').value) || 0,
+    cuentaContableId: parseInt(document.getElementById('movimientoCuenta').value) || null,
+    asientoId: parseInt(document.getElementById('movimientoAsiento').value) || null,
+  };
+  if (!data.cuentaContableId || !data.asientoId) {
+    Utils.showToast('Cuenta y asiento son obligatorios', 'warning');
+    return;
+  }
+  try {
+    if (id) {
+      await API.put('/movimiento-contable/' + id, data);
+      Utils.showToast('Movimiento actualizado', 'success');
+    } else {
+      await API.post('/movimiento-contable', data);
+      Utils.showToast('Movimiento creado', 'success');
     }
-};
+    bootstrap.Modal.getInstance(document.getElementById('movimientoModal'))?.hide();
+    loadMovimientos();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function deleteMovimiento(id) {
+  const confirmed = await Utils.confirmAction('&iquest;Eliminar este movimiento?', 'Confirmar', 'Eliminar');
+  if (!confirmed) return;
+  try {
+    await API.del('/movimiento-contable/' + id);
+    Utils.showToast('Movimiento eliminado', 'success');
+    loadMovimientos();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}

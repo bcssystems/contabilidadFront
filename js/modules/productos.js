@@ -534,6 +534,7 @@ async function abrirModal(id) {
       document.getElementById('productoId').value = p.idProducto;
       document.getElementById('productoNombre').value = p.nombre || '';
       document.getElementById('productoDescripcion').value = p.descripcion || '';
+      document.getElementById('productoCategoria').value = p.categoria || '';
       document.getElementById('productoPrecio1').value = p.precio1 || '';
       document.getElementById('productoPrecio2').value = p.precio2 || '';
       document.getElementById('productoPrecio3').value = p.precio3 || '';
@@ -715,10 +716,12 @@ async function guardarProducto() {
     }
   }
 
+  const categoria = document.getElementById('productoCategoria').value;
   const data = {
     sku: document.getElementById('productoSku').value.trim(),
     nombre: document.getElementById('productoNombre').value.trim(),
     descripcion: document.getElementById('productoDescripcion').value.trim(),
+    categoria: categoria || null,
     precio1: parseFloat(document.getElementById('productoPrecio1').value) || null,
     precio2: parseFloat(document.getElementById('productoPrecio2').value) || null,
     precio3: parseFloat(document.getElementById('productoPrecio3').value) || null,

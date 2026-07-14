@@ -53,16 +53,16 @@ function renderNode(cuenta) {
 
   return '<li class="cuenta-node" data-id="' + cuenta.id + '">' +
     '<div class="producto-row">' +
-      '<span class="td-toggle" style="width:40px">' +
-        (hasChildren ? '<button class="btn-toggle" data-id="' + cuenta.id + '"><i class="fas fa-chevron-right"></i></button>' : '') +
+      '<span class="producto-toggle-wrapper">' +
+        (hasChildren ? '<button class="producto-toggle" data-id="' + cuenta.id + '"><i class="fas fa-chevron-right"></i></button>' : '') +
       '</span>' +
       '<span class="td-sku" style="flex:1"><strong>' + Utils.esc(cuenta.codigo || '-') + '</strong></span>' +
       '<span class="td-nombre" style="flex:2">' + Utils.esc(cuenta.nombre || '-') + '</span>' +
       '<span class="td-tipo" style="flex:1">' + Utils.esc(cuenta.tipoCuentaContable || '-') + '</span>' +
       '<span class="td-estado" style="flex:0.5"><span class="status-badge ' + activeClass + '">' + activeText + '</span></span>' +
-      '<span class="td-acciones" style="width:80px">' +
-        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-cuenta" data-id="' + cuenta.id + '"><i class="fas fa-edit"></i></button>' +
-        '<button class="btn btn-sm btn-outline-danger btn-delete-cuenta" data-id="' + cuenta.id + '"><i class="fas fa-trash"></i></button>' +
+      '<span class="producto-actions">' +
+        '<button class="btn-action btn-action-edit btn-edit-cuenta" data-id="' + cuenta.id + '"><i class="fas fa-edit"></i></button>' +
+        '<button class="btn-action btn-action-delete btn-delete-cuenta" data-id="' + cuenta.id + '"><i class="fas fa-trash"></i></button>' +
       '</span>' +
     '</div>' +
     (hasChildren ? '<ul class="producto-children" data-parent="' + cuenta.id + '" hidden>' + cuenta.children.map(c => renderNode(c)).join('') + '</ul>' : '') +
@@ -82,7 +82,7 @@ function renderTree(list) {
 }
 
 function bindTreeEvents() {
-  document.querySelectorAll('.btn-toggle').forEach(btn => {
+  document.querySelectorAll('.producto-toggle').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       const li = this.closest('.cuenta-node');

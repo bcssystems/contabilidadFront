@@ -39,7 +39,7 @@ function renderTable(list) {
       '<td>' + (u.idUsuario || u.id) + '</td>' +
       '<td>' + Utils.esc(u.username || '-') + '</td>' +
       '<td>' + Utils.esc(fullName) + '</td>' +
-      '<td><span class="status-badge" style="background:' + roleColor + ';color:white;">' + Utils.esc(u.rol || '-') + '</span></td>' +
+      '<td><span class="status-badge" style="background:' + roleColor + ';color:#fff;">' + Utils.esc(u.rol || '-') + '</span></td>' +
       '<td><span class="status-badge ' + (u.activo ? 'active' : 'inactive') + '">' + (u.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
       '<td>' + (u.fechaRegistro ? Utils.formatDate(u.fechaRegistro) : '-') + '</td>' +
       '<td>' +

@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // BC Systems - Main App (Modular)
 // ========================================
 
@@ -51,7 +51,7 @@ function initUserInfo() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
         document.getElementById('userName').textContent = user.username || 'Usuario';
-        const roleLabels = { 'ADMIN': 'Administrador', 'ALMACEN': 'Almacén', 'USER': 'Usuario' };
+        const roleLabels = { 'ADMIN': 'Administrador', 'ALMACEN': 'AlmacÃ©n', 'USER': 'Usuario' };
         document.getElementById('userRole').textContent = roleLabels[user.rol] || user.rol || 'Usuario';
         document.getElementById('userAvatar').innerHTML = '<i class="fas fa-user"></i>';
 
@@ -100,7 +100,7 @@ function navigateTo(page) {
         'ventas': 'Ventas',
         'compras': 'Compras',
         'gastos': 'Gastos',
-        'nomina': 'Nómina',
+        'nomina': 'NÃ³mina',
         'proveedores': 'Proveedores',
         'empleados': 'Empleados',
         'comisiones': 'Comisiones',
@@ -149,7 +149,7 @@ async function loadPage(page) {
         }
     } catch (error) {
         console.error('Error loading page:', error);
-        showToast('Error al cargar la página', 'error');
+        showToast('Error al cargar la pÃ¡gina', 'error');
         document.getElementById('pageContent').innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -251,8 +251,8 @@ async function renderInicioPage() {
                 </div>
                 <div class="card-body">
                     <p style="color: var(--text-secondary); line-height: 1.8;">
-                        Este es el sistema de gestión contable de <strong>BC Systems</strong>. 
-                        Desde aquí podrás administrar todos los aspectos de tu contabilidad:
+                        Este es el sistema de gestiÃ³n contable de <strong>BC Systems</strong>. 
+                        Desde aquÃ­ podrÃ¡s administrar todos los aspectos de tu contabilidad:
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
                         <div style="padding: 20px; background: var(--bg-body); border-radius: 12px;">
@@ -381,8 +381,8 @@ async function renderInicio() {
                 </div>
                 <div class="card-body">
                     <p style="color: var(--text-secondary); line-height: 1.8;">
-                        Este es el sistema de gestión contable de <strong>BC Systems</strong>. 
-                        Desde aquí podrás administrar todos los aspectos de tu contabilidad:
+                        Este es el sistema de gestiÃ³n contable de <strong>BC Systems</strong>. 
+                        Desde aquÃ­ podrÃ¡s administrar todos los aspectos de tu contabilidad:
                     </p>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
                         <div style="padding: 20px; background: var(--bg-body); border-radius: 12px;">
@@ -478,7 +478,7 @@ async function renderProveedores() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Proveedores</h3>
+                <h3 class="card-title">GestiÃ³n de Proveedores</h3>
                 <button class="btn btn-primary" onclick="openProveedorModal()">
                     <i class="fas fa-plus"></i> Nuevo Proveedor
                 </button>
@@ -493,9 +493,9 @@ async function renderProveedores() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'proveedores')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -563,7 +563,7 @@ async function renderVentas() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Ventas</h3>
+                <h3 class="card-title">GestiÃ³n de Ventas</h3>
                 <button class="btn btn-primary" onclick="openVentaModal()">
                     <i class="fas fa-plus"></i> Nueva Venta
                 </button>
@@ -578,9 +578,9 @@ async function renderVentas() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'ventas')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -649,7 +649,7 @@ async function renderCompras() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Compras</h3>
+                <h3 class="card-title">GestiÃ³n de Compras</h3>
                 <button class="btn btn-primary" onclick="openCompraModal()">
                     <i class="fas fa-plus"></i> Nueva Compra
                 </button>
@@ -664,9 +664,9 @@ async function renderCompras() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'compras')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -734,7 +734,7 @@ async function renderGastos() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Gastos</h3>
+                <h3 class="card-title">GestiÃ³n de Gastos</h3>
                 <button class="btn btn-primary" onclick="openGastoModal()">
                     <i class="fas fa-plus"></i> Nuevo Gasto
                 </button>
@@ -749,9 +749,9 @@ async function renderGastos() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'gastos')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -816,7 +816,7 @@ async function renderEmpleados() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Empleados</h3>
+                <h3 class="card-title">GestiÃ³n de Empleados</h3>
                 <button class="btn btn-primary" onclick="openEmpleadoModal()">
                     <i class="fas fa-plus"></i> Nuevo Empleado
                 </button>
@@ -831,9 +831,9 @@ async function renderEmpleados() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'empleados')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -870,7 +870,7 @@ async function renderEmpleados() {
     `;
 }
 
-// Nómina
+// NÃ³mina
 async function renderNomina() {
     let data = { content: [], totalElements: 0, totalPages: 0 };
     try {
@@ -901,9 +901,9 @@ async function renderNomina() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Nómina</h3>
+                <h3 class="card-title">GestiÃ³n de NÃ³mina</h3>
                 <button class="btn btn-primary" onclick="openNominaModal()">
-                    <i class="fas fa-plus"></i> Nueva Nómina
+                    <i class="fas fa-plus"></i> Nueva NÃ³mina
                 </button>
             </div>
             <div class="card-body">
@@ -911,24 +911,24 @@ async function renderNomina() {
                     <div class="table-toolbar-left">
                         <div class="search-box">
                             <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar nómina...">
+                            <input type="text" placeholder="Buscar nÃ³mina...">
                         </div>
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'nomina')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
                 ${data.content.length === 0 ? `
                     <div class="empty-state">
                         <i class="fas fa-users"></i>
-                        <h3>No hay nóminas</h3>
-                        <p>Comienza registrando una nueva nómina</p>
+                        <h3>No hay nÃ³minas</h3>
+                        <p>Comienza registrando una nueva nÃ³mina</p>
                         <button class="btn btn-primary" onclick="openNominaModal()">
-                            <i class="fas fa-plus"></i> Nueva Nómina
+                            <i class="fas fa-plus"></i> Nueva NÃ³mina
                         </button>
                     </div>
                 ` : `
@@ -988,9 +988,9 @@ async function renderComisiones() {
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Comisiones</h3>
+                <h3 class="card-title">GestiÃ³n de Comisiones</h3>
                 <button class="btn btn-primary" onclick="openComisionModal()">
-                    <i class="fas fa-plus"></i> Nueva Comisión
+                    <i class="fas fa-plus"></i> Nueva ComisiÃ³n
                 </button>
             </div>
             <div class="card-body">
@@ -998,14 +998,14 @@ async function renderComisiones() {
                     <div class="table-toolbar-left">
                         <div class="search-box">
                             <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar comisión...">
+                            <input type="text" placeholder="Buscar comisiÃ³n...">
                         </div>
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'comisiones')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -1013,9 +1013,9 @@ async function renderComisiones() {
                     <div class="empty-state">
                         <i class="fas fa-percent"></i>
                         <h3>No hay comisiones</h3>
-                        <p>Comienza registrando una nueva comisión</p>
+                        <p>Comienza registrando una nueva comisiÃ³n</p>
                         <button class="btn btn-primary" onclick="openComisionModal()">
-                            <i class="fas fa-plus"></i> Nueva Comisión
+                            <i class="fas fa-plus"></i> Nueva ComisiÃ³n
                         </button>
                     </div>
                 ` : `
@@ -1027,7 +1027,7 @@ async function renderComisiones() {
                                     <th>Tipo</th>
                                     <th>Monto Base</th>
                                     <th>%</th>
-                                    <th>Monto Comisión</th>
+                                    <th>Monto ComisiÃ³n</th>
                                     <th>Estado</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -1091,9 +1091,9 @@ async function renderCuentas() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'cuentas')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -1112,7 +1112,7 @@ async function renderCuentas() {
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Código</th>
+                                    <th>CÃ³digo</th>
                                     <th>Nombre</th>
                                     <th>Tipo</th>
                                     <th>Estado</th>
@@ -1181,9 +1181,9 @@ async function renderAsientos() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'asientos')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -1204,7 +1204,7 @@ async function renderAsientos() {
                                     <th>ID</th>
                                     <th>Fecha</th>
                                     <th>Referencia</th>
-                                    <th>Descripción</th>
+                                    <th>DescripciÃ³n</th>
                                     <th>Tipo</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -1268,9 +1268,9 @@ async function renderMovimientos() {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'movimientos')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -1289,7 +1289,7 @@ async function renderMovimientos() {
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Código</th>
+                                    <th>CÃ³digo</th>
                                     <th>Cuenta</th>
                                     <th>Debe</th>
                                     <th>Haber</th>
@@ -1508,7 +1508,7 @@ window.updateProveedor = async function(id) {
 };
 
 window.deleteProveedor = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar este proveedor?')) return;
     
     try {
         showLoading();
@@ -1536,9 +1536,9 @@ window.openVentaModal = function() {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Tipo de Venta</label>
-                    <select class="form-control" name="tipoVenta" required>
+                    <select class="form-select" name="tipoVenta" required>
                         <option value="CONTADO">Contado</option>
-                        <option value="CREDITO">Crédito</option>
+                        <option value="CREDITO">CrÃ©dito</option>
                     </select>
                 </div>
             </div>
@@ -1596,9 +1596,9 @@ window.editVenta = async function(id) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tipo de Venta</label>
-                        <select class="form-control" name="tipoVenta" required>
+                        <select class="form-select" name="tipoVenta" required>
                             <option value="CONTADO" ${venta.tipoVenta === 'CONTADO' ? 'selected' : ''}>Contado</option>
-                            <option value="CREDITO" ${venta.tipoVenta === 'CREDITO' ? 'selected' : ''}>Crédito</option>
+                            <option value="CREDITO" ${venta.tipoVenta === 'CREDITO' ? 'selected' : ''}>CrÃ©dito</option>
                         </select>
                     </div>
                 </div>
@@ -1615,7 +1615,7 @@ window.editVenta = async function(id) {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Estado</label>
-                        <select class="form-control" name="estadoVenta" required>
+                        <select class="form-select" name="estadoVenta" required>
                             <option value="PENDIENTE" ${venta.estadoVenta === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
                             <option value="LIQUIDADA" ${venta.estadoVenta === 'LIQUIDADA' ? 'selected' : ''}>Liquidada</option>
                             <option value="CANCELADA" ${venta.estadoVenta === 'CANCELADA' ? 'selected' : ''}>Cancelada</option>
@@ -1658,7 +1658,7 @@ window.updateVenta = async function(id) {
 };
 
 window.deleteVenta = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta venta?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta venta?')) return;
     
     try {
         showLoading();
@@ -1745,7 +1745,7 @@ window.editCompra = async function(id) {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Estado</label>
-                        <select class="form-control" name="estadoCompra" required>
+                        <select class="form-select" name="estadoCompra" required>
                             <option value="PENDIENTE" ${compra.estadoCompra === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
                             <option value="PAGADA" ${compra.estadoCompra === 'PAGADA' ? 'selected' : ''}>Pagada</option>
                             <option value="CANCELADA" ${compra.estadoCompra === 'CANCELADA' ? 'selected' : ''}>Cancelada</option>
@@ -1792,7 +1792,7 @@ window.updateCompra = async function(id) {
 };
 
 window.deleteCompra = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta compra?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta compra?')) return;
     
     try {
         showLoading();
@@ -1926,7 +1926,7 @@ window.updateGasto = async function(id) {
 };
 
 window.deleteGasto = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar este gasto?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar este gasto?')) return;
     
     try {
         showLoading();
@@ -1953,7 +1953,7 @@ window.openEmpleadoModal = function() {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Puesto</label>
-                    <select class="form-control" name="position" required>
+                    <select class="form-select" name="position" required>
                         <option value="VENDEDOR">Vendedor</option>
                         <option value="COBRADOR">Cobrador</option>
                         <option value="ADMINISTRADOR">Administrador</option>
@@ -2005,7 +2005,7 @@ window.editEmpleado = async function(id) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Puesto</label>
-                    <select class="form-control" name="position" required>
+                    <select class="form-select" name="position" required>
                         <option value="VENDEDOR" ${empleado.position === 'VENDEDOR' ? 'selected' : ''}>Vendedor</option>
                         <option value="COBRADOR" ${empleado.position === 'COBRADOR' ? 'selected' : ''}>Cobrador</option>
                         <option value="ADMINISTRADOR" ${empleado.position === 'ADMINISTRADOR' ? 'selected' : ''}>Administrador</option>
@@ -2049,11 +2049,11 @@ window.updateEmpleado = async function(id) {
 };
 
 // ========================================
-// NÓMINA CRUD
+// NÃ“MINA CRUD
 // ========================================
 window.openNominaModal = function() {
     const today = new Date().toISOString().split('T')[0];
-    openModal('Nueva Nómina', `
+    openModal('Nueva NÃ³mina', `
         <form id="nominaForm">
             <div class="form-row">
                 <div class="form-group">
@@ -2093,7 +2093,7 @@ window.saveNomina = async function() {
     try {
         showLoading();
         await api.createNomina(data);
-        showToast('Nómina creada exitosamente', 'success');
+        showToast('NÃ³mina creada exitosamente', 'success');
         closeModal();
         loadPage('nomina');
     } catch (error) {
@@ -2106,7 +2106,7 @@ window.saveNomina = async function() {
 window.editNomina = async function(id) {
     try {
         const nomina = await api.getNomina(id);
-        openModal('Editar Nómina', `
+        openModal('Editar NÃ³mina', `
             <form id="nominaForm">
                 <div class="form-row">
                     <div class="form-group">
@@ -2149,7 +2149,7 @@ window.updateNomina = async function(id) {
     try {
         showLoading();
         await api.updateNomina(id, data);
-        showToast('Nómina actualizada exitosamente', 'success');
+        showToast('NÃ³mina actualizada exitosamente', 'success');
         closeModal();
         loadPage('nomina');
     } catch (error) {
@@ -2160,12 +2160,12 @@ window.updateNomina = async function(id) {
 };
 
 window.deleteNomina = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta nómina?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta nÃ³mina?')) return;
     
     try {
         showLoading();
         await api.deleteNomina(id);
-        showToast('Nómina eliminada exitosamente', 'success');
+        showToast('NÃ³mina eliminada exitosamente', 'success');
         loadPage('nomina');
     } catch (error) {
         showToast(error.message, 'error');
@@ -2178,12 +2178,12 @@ window.deleteNomina = async function(id) {
 // COMISIONES CRUD
 // ========================================
 window.openComisionModal = function() {
-    openModal('Nueva Comisión', `
+    openModal('Nueva ComisiÃ³n', `
         <form id="comisionForm">
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Tipo de Comisión</label>
-                    <select class="form-control" name="tipoComision" required>
+                    <label class="form-label">Tipo de ComisiÃ³n</label>
+                    <select class="form-select" name="tipoComision" required>
                         <option value="VENTA">Venta</option>
                         <option value="COBRANZA">Cobranza</option>
                     </select>
@@ -2228,7 +2228,7 @@ window.saveComision = async function() {
     try {
         showLoading();
         await api.createComision(data);
-        showToast('Comisión creada exitosamente', 'success');
+        showToast('ComisiÃ³n creada exitosamente', 'success');
         closeModal();
         loadPage('comisiones');
     } catch (error) {
@@ -2241,12 +2241,12 @@ window.saveComision = async function() {
 window.editComision = async function(id) {
     try {
         const comision = await api.getComision(id);
-        openModal('Editar Comisión', `
+        openModal('Editar ComisiÃ³n', `
             <form id="comisionForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Tipo de Comisión</label>
-                        <select class="form-control" name="tipoComision" required>
+                        <label class="form-label">Tipo de ComisiÃ³n</label>
+                        <select class="form-select" name="tipoComision" required>
                             <option value="VENTA" ${comision.tipoComision === 'VENTA' ? 'selected' : ''}>Venta</option>
                             <option value="COBRANZA" ${comision.tipoComision === 'COBRANZA' ? 'selected' : ''}>Cobranza</option>
                         </select>
@@ -2263,7 +2263,7 @@ window.editComision = async function(id) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Estado</label>
-                        <select class="form-control" name="estadoComision" required>
+                        <select class="form-select" name="estadoComision" required>
                             <option value="PENDIENTE" ${comision.estadoComision === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
                             <option value="PAGADA" ${comision.estadoComision === 'PAGADA' ? 'selected' : ''}>Pagada</option>
                             <option value="CANCELADA" ${comision.estadoComision === 'CANCELADA' ? 'selected' : ''}>Cancelada</option>
@@ -2302,7 +2302,7 @@ window.updateComision = async function(id) {
     try {
         showLoading();
         await api.updateComision(id, data);
-        showToast('Comisión actualizada exitosamente', 'success');
+        showToast('ComisiÃ³n actualizada exitosamente', 'success');
         closeModal();
         loadPage('comisiones');
     } catch (error) {
@@ -2313,12 +2313,12 @@ window.updateComision = async function(id) {
 };
 
 window.deleteComision = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta comisión?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta comisiÃ³n?')) return;
     
     try {
         showLoading();
         await api.deleteComision(id);
-        showToast('Comisión eliminada exitosamente', 'success');
+        showToast('ComisiÃ³n eliminada exitosamente', 'success');
         loadPage('comisiones');
     } catch (error) {
         showToast(error.message, 'error');
@@ -2335,7 +2335,7 @@ window.openCuentaContableModal = function() {
         <form id="cuentaForm">
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Código</label>
+                    <label class="form-label">CÃ³digo</label>
                     <input type="text" class="form-control" name="codigo" placeholder="ej. 1001" required>
                 </div>
                 <div class="form-group">
@@ -2346,7 +2346,7 @@ window.openCuentaContableModal = function() {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Tipo de Cuenta</label>
-                    <select class="form-control" name="tipoCuentaContable" required>
+                    <select class="form-select" name="tipoCuentaContable" required>
                         <option value="ACTIVO">Activo</option>
                         <option value="PASIVO">Pasivo</option>
                         <option value="CAPITAL">Capital</option>
@@ -2392,7 +2392,7 @@ window.editCuentaContable = async function(id) {
             <form id="cuentaForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Código</label>
+                        <label class="form-label">CÃ³digo</label>
                         <input type="text" class="form-control" name="codigo" value="${cuenta.codigo || ''}" required>
                     </div>
                     <div class="form-group">
@@ -2403,7 +2403,7 @@ window.editCuentaContable = async function(id) {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Tipo de Cuenta</label>
-                        <select class="form-control" name="tipoCuentaContable" required>
+                        <select class="form-select" name="tipoCuentaContable" required>
                             <option value="ACTIVO" ${cuenta.tipoCuentaContable === 'ACTIVO' ? 'selected' : ''}>Activo</option>
                             <option value="PASIVO" ${cuenta.tipoCuentaContable === 'PASIVO' ? 'selected' : ''}>Pasivo</option>
                             <option value="CAPITAL" ${cuenta.tipoCuentaContable === 'CAPITAL' ? 'selected' : ''}>Capital</option>
@@ -2452,7 +2452,7 @@ window.updateCuentaContable = async function(id) {
 };
 
 window.deleteCuentaContable = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta cuenta contable?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta cuenta contable?')) return;
     
     try {
         showLoading();
@@ -2484,12 +2484,12 @@ window.openAsientoModal = function() {
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Descripción</label>
+                <label class="form-label">DescripciÃ³n</label>
                 <textarea class="form-control" name="descripcion" rows="2" required></textarea>
             </div>
             <div class="form-group">
                 <label class="form-label">Tipo de Asiento</label>
-                <select class="form-control" name="tipoAsientoContable" required>
+                <select class="form-select" name="tipoAsientoContable" required>
                     <option value="BORRADOR">Borrador</option>
                     <option value="CONFIRMADO">Confirmado</option>
                     <option value="CANCELADO">Cancelado</option>
@@ -2544,7 +2544,7 @@ window.viewAsiento = async function(id) {
                     <span>${asiento.referencia || '-'}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Descripción:</span>
+                    <span class="detail-label">DescripciÃ³n:</span>
                     <span>${asiento.descripcion || '-'}</span>
                 </div>
                 <div class="detail-row">
@@ -2590,12 +2590,12 @@ window.editAsiento = async function(id) {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Descripción</label>
+                    <label class="form-label">DescripciÃ³n</label>
                     <textarea class="form-control" name="descripcion" rows="2" required>${asiento.descripcion || ''}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Tipo de Asiento</label>
-                    <select class="form-control" name="tipoAsientoContable" required>
+                    <select class="form-select" name="tipoAsientoContable" required>
                         <option value="BORRADOR" ${asiento.tipoAsientoContable === 'BORRADOR' ? 'selected' : ''}>Borrador</option>
                         <option value="CONFIRMADO" ${asiento.tipoAsientoContable === 'CONFIRMADO' ? 'selected' : ''}>Confirmado</option>
                         <option value="CANCELADO" ${asiento.tipoAsientoContable === 'CANCELADO' ? 'selected' : ''}>Cancelado</option>
@@ -2631,7 +2631,7 @@ window.updateAsiento = async function(id) {
 };
 
 window.deleteAsiento = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar este asiento contable?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar este asiento contable?')) return;
     
     try {
         showLoading();
@@ -2758,7 +2758,7 @@ window.updateMovimiento = async function(id) {
 };
 
 window.deleteMovimiento = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar este movimiento contable?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar este movimiento contable?')) return;
     
     try {
         showLoading();

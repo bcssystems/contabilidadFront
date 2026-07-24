@@ -1,5 +1,5 @@
-// ========================================
-// BC Systems - Módulo Compras
+﻿// ========================================
+// BC Systems - MÃ³dulo Compras
 // ========================================
 
 window.initCompras = function() {
@@ -44,7 +44,7 @@ function renderComprasTable(data) {
     const html = `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Compras</h3>
+                <h3 class="card-title">GestiÃ³n de Compras</h3>
                 <button class="btn btn-primary" onclick="openCompraModal()">
                     <i class="fas fa-plus"></i> Nueva Compra
                 </button>
@@ -59,9 +59,9 @@ function renderComprasTable(data) {
                     </div>
                     <div class="table-toolbar-right">
                         <select class="select-control" onchange="changePageSize(this.value, 'compras')">
-                            <option value="10">10 por página</option>
-                            <option value="20" selected>20 por página</option>
-                            <option value="30">30 por página</option>
+                            <option value="10">10 por pÃ¡gina</option>
+                            <option value="20" selected>20 por pÃ¡gina</option>
+                            <option value="30">30 por pÃ¡gina</option>
                         </select>
                     </div>
                 </div>
@@ -107,7 +107,7 @@ window.openCompraModal = function() {
     openModal('Nueva Compra', `
         <form id="compraForm">
             <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> El asiento contable se generará automáticamente.
+                <i class="fas fa-info-circle"></i> El asiento contable se generarÃ¡ automÃ¡ticamente.
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -116,9 +116,9 @@ window.openCompraModal = function() {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Tipo de Compra</label>
-                    <select class="form-control" name="tipoCompra" required>
+                    <select class="form-select" name="tipoCompra" required>
                         <option value="CONTADO">Contado</option>
-                        <option value="CREDITO">Crédito</option>
+                        <option value="CREDITO">CrÃ©dito</option>
                     </select>
                 </div>
             </div>
@@ -145,12 +145,12 @@ window.saveCompra = async function() {
     const data = Object.fromEntries(formData);
     data.total_compra = parseFloat(data.total_compra);
     data.proveedorId = data.proveedorId ? parseInt(data.proveedorId) : null;
-    // El asiento se genera automáticamente
+    // El asiento se genera automÃ¡ticamente
     
     try {
         showLoading();
         await api.createCompra(data);
-        showToast('Compra creada exitosamente. Asiento contable generado automáticamente.', 'success');
+        showToast('Compra creada exitosamente. Asiento contable generado automÃ¡ticamente.', 'success');
         closeModal();
         loadCompras();
     } catch (error) {
@@ -172,9 +172,9 @@ window.editCompra = async function(id) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tipo de Compra</label>
-                        <select class="form-control" name="tipoCompra" required>
+                        <select class="form-select" name="tipoCompra" required>
                             <option value="CONTADO" ${compra.tipoCompra === 'CONTADO' ? 'selected' : ''}>Contado</option>
-                            <option value="CREDITO" ${compra.tipoCompra === 'CREDITO' ? 'selected' : ''}>Crédito</option>
+                            <option value="CREDITO" ${compra.tipoCompra === 'CREDITO' ? 'selected' : ''}>CrÃ©dito</option>
                         </select>
                     </div>
                 </div>
@@ -185,7 +185,7 @@ window.editCompra = async function(id) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Estado</label>
-                        <select class="form-control" name="estadoCompra" required>
+                        <select class="form-select" name="estadoCompra" required>
                             <option value="PENDIENTE" ${compra.estadoCompra === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
                             <option value="PAGADA" ${compra.estadoCompra === 'PAGADA' ? 'selected' : ''}>Pagada</option>
                             <option value="CANCELADA" ${compra.estadoCompra === 'CANCELADA' ? 'selected' : ''}>Cancelada</option>
@@ -234,7 +234,7 @@ window.updateCompra = async function(id) {
 };
 
 window.deleteCompra = async function(id) {
-    if (!confirm('¿Estás seguro de eliminar esta compra?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta compra?')) return;
     
     try {
         showLoading();

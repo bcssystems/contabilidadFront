@@ -5,39 +5,39 @@
 
 :root {
     /* Colores principales */
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --primary-light: #3b82f6;
+    --primary: #00ff41;
+    --primary-dark: #00cc33;
+    --primary-light: #00ff41;
     --secondary: #64748b;
     
-    /* Colores语义 */
+    /* Colores semanticos */
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
     --info: #06b6d4;
     
     /* Fondos */
-    --bg-body: #f1f5f9;
-    --bg-card: #ffffff;
-    --bg-sidebar: #1e293b;
-    --bg-sidebar-hover: #334155;
-    --bg-topbar: #ffffff;
+    --bg-body: #111827;
+    --bg-card: #1e293b;
+    --bg-sidebar: #0b0f1a;
+    --bg-sidebar-hover: rgba(0, 255, 65, 0.06);
+    --bg-topbar: rgba(17, 24, 39, 0.85);
     
     /* Texto */
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --text-light: #94a3b8;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-light: #64748b;
     --text-white: #ffffff;
     
     /* Bordes */
-    --border-color: #e2e8f0;
+    --border-color: #334155;
     --border-radius: 12px;
     --border-radius-sm: 8px;
     
     /* Sombras */
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
     
     /* Transiciones */
     --transition: all 0.3s ease;
@@ -45,6 +45,12 @@
     /* Layout */
     --sidebar-width: 260px;
     --topbar-height: 70px;
+    
+    /* Neon */
+    --neon: #00ff41;
+    --neon-dark: #00cc33;
+    --neon-glow: rgba(0, 255, 65, 0.3);
+    --neon-glow-subtle: rgba(0, 255, 65, 0.08);
 }
 
 * {
@@ -77,7 +83,7 @@ body::-webkit-scrollbar {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    background: linear-gradient(135deg, #0b0f1a 0%, #111827 100%);
     padding: 20px;
 }
 
@@ -104,15 +110,16 @@ body::-webkit-scrollbar {
 .logo {
     width: 80px;
     height: 80px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    background: rgba(0, 255, 65, 0.1);
+    border: 2px solid rgba(0, 255, 65, 0.2);
     border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 20px;
     font-size: 32px;
-    color: white;
-    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+    color: var(--neon);
+    box-shadow: 0 10px 30px var(--neon-glow-subtle);
 }
 
 .login-header h1 {
@@ -142,7 +149,7 @@ body::-webkit-scrollbar {
 }
 
 .form-group label i {
-    color: var(--primary);
+    color: var(--neon);
     width: 16px;
 }
 
@@ -153,14 +160,15 @@ body::-webkit-scrollbar {
     border-radius: var(--border-radius-sm);
     font-size: 14px;
     transition: var(--transition);
-    background: var(--bg-body);
+    background: var(--bg-card);
+    color: var(--text-primary);
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: var(--primary);
-    background: white;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    border-color: var(--neon);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 4px var(--neon-glow-subtle);
 }
 
 .form-group input::placeholder {
@@ -179,15 +187,15 @@ body::-webkit-scrollbar {
 .remember-me input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: var(--primary);
+    accent-color: var(--neon);
     cursor: pointer;
 }
 
 .btn-login {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
+    background: var(--neon-dark);
+    color: #0a0a0a;
     border: none;
     border-radius: var(--border-radius-sm);
     font-size: 16px;
@@ -202,8 +210,10 @@ body::-webkit-scrollbar {
 }
 
 .btn-login:hover {
+    background: var(--neon);
+    color: #0a0a0a;
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 10px 30px var(--neon-glow);
 }
 
 .btn-login:active {
@@ -253,7 +263,7 @@ body::-webkit-scrollbar {
 
 .login-decoration {
     flex: 1;
-    background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #0b0f1a 0%, #0a0a0a 100%);
     padding: 50px 40px;
     display: flex;
     align-items: center;
@@ -267,7 +277,7 @@ body::-webkit-scrollbar {
     position: absolute;
     width: 300px;
     height: 300px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(0, 255, 65, 0.04);
     border-radius: 50%;
     top: -100px;
     right: -100px;
@@ -278,7 +288,7 @@ body::-webkit-scrollbar {
     position: absolute;
     width: 200px;
     height: 200px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(0, 255, 65, 0.03);
     border-radius: 50%;
     bottom: -50px;
     left: -50px;
@@ -384,12 +394,14 @@ body::-webkit-scrollbar {
 .sidebar-logo .logo-icon {
     width: 42px;
     height: 42px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid rgba(0, 255, 65, 0.2);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    color: var(--neon);
 }
 
 .sidebar-logo .logo-text {
@@ -442,8 +454,8 @@ body::-webkit-scrollbar {
 }
 
 .nav-item.active {
-    background: var(--primary);
-    color: white;
+    background: rgba(0, 255, 65, 0.1);
+    color: var(--neon);
 }
 
 .nav-item i {
@@ -483,13 +495,14 @@ body::-webkit-scrollbar {
 .user-avatar {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+    background: var(--primary-light);
+    color: var(--neon);
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
     font-weight: 600;
+    border: 1px solid var(--neon-glow-border);
 }
 
 .user-details {
@@ -533,6 +546,8 @@ body::-webkit-scrollbar {
 .topbar {
     height: var(--topbar-height);
     background: var(--bg-topbar);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -561,8 +576,8 @@ body::-webkit-scrollbar {
 }
 
 .toggle-sidebar:hover {
-    background: var(--bg-body);
-    color: var(--text-primary);
+    background: var(--primary-light);
+    color: var(--neon);
 }
 
 .page-title {
@@ -592,8 +607,9 @@ body::-webkit-scrollbar {
 }
 
 .topbar-icon:hover {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-light);
+    color: var(--neon);
+    box-shadow: 0 0 10px var(--neon-glow-subtle);
 }
 
 .topbar-icon .notification-badge {
@@ -673,8 +689,8 @@ body::-webkit-scrollbar {
 }
 
 .stat-icon.primary {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--primary);
+    background: var(--neon-glow-subtle);
+    color: var(--neon);
 }
 
 .stat-icon.success {
@@ -793,7 +809,7 @@ body::-webkit-scrollbar {
 }
 
 .table th {
-    background: var(--bg-body);
+    background: rgba(17, 24, 39, 0.5);
     font-weight: 600;
     font-size: 12px;
     text-transform: uppercase;
@@ -806,7 +822,7 @@ body::-webkit-scrollbar {
 }
 
 .table tbody tr:hover {
-    background: var(--bg-body);
+    background: rgba(0, 255, 65, 0.04);
 }
 
 .table td {
@@ -891,13 +907,14 @@ body::-webkit-scrollbar {
     border-radius: var(--border-radius-sm);
     font-size: 14px;
     transition: var(--transition);
-    background: white;
+    background: var(--bg-card);
+    color: var(--text-primary);
 }
 
 .form-control:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    border-color: var(--neon);
+    box-shadow: 0 0 0 4px var(--neon-glow-subtle);
 }
 
 .form-label {
@@ -911,13 +928,14 @@ body::-webkit-scrollbar {
     margin-right: 8px;
     width: 18px;
     height: 18px;
-    accent-color: var(--primary);
+    accent-color: var(--neon);
 }
 
 .asiento-detail {
-    background: var(--bg-body);
+    background: var(--bg-card);
     padding: 16px;
     border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .detail-row {
@@ -955,7 +973,8 @@ body::-webkit-scrollbar {
 }
 
 .modal {
-    background: white;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     width: 100%;
     max-width: 600px;
@@ -1037,16 +1056,16 @@ body::-webkit-scrollbar {
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border-color);
-    background: white;
+    background: var(--bg-card);
+    color: var(--text-secondary);
     border-radius: 8px;
     cursor: pointer;
     transition: var(--transition);
-    color: var(--text-secondary);
 }
 
 .pagination-btn:hover:not(:disabled) {
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: var(--neon);
+    color: var(--neon);
 }
 
 .pagination-btn:disabled {
@@ -1055,9 +1074,9 @@ body::-webkit-scrollbar {
 }
 
 .pagination-btn.active {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: white;
+    background: var(--neon-dark);
+    border-color: var(--neon-dark);
+    color: #0a0a0a;
 }
 
 .page-input {
@@ -1067,6 +1086,8 @@ body::-webkit-scrollbar {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 14px;
+    background: var(--bg-card);
+    color: var(--text-primary);
 }
 
 /* Search */
@@ -1074,7 +1095,7 @@ body::-webkit-scrollbar {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--bg-body);
+    background: var(--bg-card);
     padding: 10px 16px;
     border-radius: var(--border-radius-sm);
     border: 2px solid transparent;
@@ -1082,8 +1103,8 @@ body::-webkit-scrollbar {
 }
 
 .search-box:focus-within {
-    background: white;
-    border-color: var(--primary);
+    background: var(--bg-card);
+    border-color: var(--neon);
 }
 
 .search-box i {
@@ -1129,7 +1150,7 @@ body::-webkit-scrollbar {
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    background: white;
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-md);
@@ -1186,13 +1207,13 @@ body::-webkit-scrollbar {
     padding: 10px 14px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    background: var(--bg-body);
+    background: var(--bg-card);
     transition: var(--transition);
 }
 
 .cuenta-node.expanded > .cuenta-row {
-    border-color: var(--primary);
-    box-shadow: var(--shadow-sm);
+    border-color: var(--neon);
+    box-shadow: 0 0 10px var(--neon-glow-subtle);
 }
 
 .cuenta-toggle-wrapper {
@@ -1217,8 +1238,8 @@ body::-webkit-scrollbar {
 }
 
 .cuenta-toggle:hover {
-    background: var(--bg-body);
-    color: var(--primary);
+    background: var(--primary-light);
+    color: var(--neon);
 }
 
 .cuenta-toggle i {
@@ -1257,7 +1278,7 @@ body::-webkit-scrollbar {
     padding: 2px 8px;
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
-    background: white;
+    background: rgba(255, 255, 255, 0.06);
     font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
@@ -1281,8 +1302,8 @@ body::-webkit-scrollbar {
     align-items: center;
     padding: 2px 10px;
     border-radius: 9999px;
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--primary);
+    background: var(--neon-glow-subtle);
+    color: var(--neon);
     font-weight: 600;
     text-transform: capitalize;
 }
@@ -1325,13 +1346,13 @@ body::-webkit-scrollbar {
 }
 
 .action-btn.edit {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--primary);
+    background: var(--neon-glow-subtle);
+    color: var(--neon);
 }
 
 .action-btn.edit:hover {
-    background: var(--primary);
-    color: white;
+    background: var(--neon-dark);
+    color: #0a0a0a;
 }
 
 .action-btn.delete {
@@ -1359,7 +1380,7 @@ body::-webkit-scrollbar {
     width: 40px;
     height: 40px;
     border: 3px solid var(--border-color);
-    border-top-color: var(--primary);
+    border-top-color: var(--neon);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -1377,7 +1398,7 @@ body::-webkit-scrollbar {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255,255,255,0.8);
+    background: rgba(17, 24, 39, 0.8);
     z-index: 3000;
     align-items: center;
     justify-content: center;
@@ -1401,13 +1422,15 @@ body::-webkit-scrollbar {
 .toast {
     padding: 16px 20px;
     border-radius: var(--border-radius-sm);
-    background: white;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
     display: flex;
     align-items: center;
     gap: 12px;
     min-width: 300px;
     animation: slideIn 0.3s ease;
+    color: var(--text-primary);
 }
 
 @keyframes slideIn {
@@ -1572,11 +1595,12 @@ body::-webkit-scrollbar {
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     font-size: 14px;
-    background: white;
+    background: var(--bg-card);
+    color: var(--text-primary);
     cursor: pointer;
 }
 
 .select-control:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--neon);
 }

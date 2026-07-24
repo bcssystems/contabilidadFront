@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // BC Systems - Modulo Almacen (Movimientos)
 // ========================================
 
@@ -71,7 +71,7 @@ function renderAlmacenPage() {
                             <i class="fas fa-list"></i> Todos
                         </button>
                         <button class="tab-btn ${currentTab === 'pendientes' ? 'active' : ''}" onclick="switchTab('pendientes')" style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:500;color:${currentTab === 'pendientes' ? 'var(--primary)' : 'var(--text-light)'};border-bottom:2px solid ${currentTab === 'pendientes' ? 'var(--primary)' : 'transparent'};margin-bottom:-2px;">
-                            <i class="fas fa-clock"></i> Pendientes <span id="pendientesCount" class="badge" style="background:var(--warning);color:white;border-radius:10px;padding:2px 8px;font-size:11px;margin-left:6px;">0</span>
+                            <i class="fas fa-clock"></i> Pendientes <span id="pendientesCount" class="badge" style="background:var(--warning);color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;margin-left:6px;">0</span>
                         </button>
                     </div>
                     <div id="movimientosContent">
@@ -222,10 +222,10 @@ function renderPendientesTable(data) {
             <td>${m.solicitanteNombre || '-'}</td>
             <td>
                 <div class="action-btns">
-                    <button class="action-btn" style="background:var(--success);color:white;" onclick="aprobarSalida(${m.id})" title="Aprobar">
+                    <button class="action-btn" style="background:var(--success);color:#fff;" onclick="aprobarSalida(${m.id})" title="Aprobar">
                         <i class="fas fa-check"></i>
                     </button>
-                    <button class="action-btn" style="background:var(--danger);color:white;" onclick="rechazarSalida(${m.id})" title="Rechazar">
+                    <button class="action-btn" style="background:var(--danger);color:#fff;" onclick="rechazarSalida(${m.id})" title="Rechazar">
                         <i class="fas fa-times"></i>
                     </button>
                     <button class="action-btn view" onclick="viewMovimiento(${m.id})" title="Ver">
@@ -373,7 +373,7 @@ function buildEntradaForm() {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Medio de Compra</label>
-                    <select class="form-control" name="medioCompra">
+                    <select class="form-select" name="medioCompra">
                         <option value="">Seleccionar...</option>
                         <option value="EFECTIVO">Efectivo</option>
                         <option value="TRANSFERENCIA">Transferencia</option>
@@ -388,7 +388,7 @@ function buildEntradaForm() {
             </div>
             <div class="form-group">
                 <label class="form-label">Sucursal</label>
-                <select class="form-control" name="sucursalId" id="entradaSucursal">
+                <select class="form-select" name="sucursalId" id="entradaSucursal">
                     <option value="">Seleccionar sucursal...</option>
                 </select>
             </div>
@@ -534,7 +534,7 @@ function buildSalidaForm() {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Medio de Compra</label>
-                    <select class="form-control" name="medioCompra">
+                    <select class="form-select" name="medioCompra">
                         <option value="">Seleccionar...</option>
                         <option value="EFECTIVO">Efectivo</option>
                         <option value="TRANSFERENCIA">Transferencia</option>
@@ -555,7 +555,7 @@ function buildSalidaForm() {
             </div>
             <div class="form-group">
                 <label class="form-label">Sucursal</label>
-                <select class="form-control" name="sucursalId" id="salidaSucursal">
+                <select class="form-select" name="sucursalId" id="salidaSucursal">
                     <option value="">Seleccionar sucursal...</option>
                 </select>
             </div>

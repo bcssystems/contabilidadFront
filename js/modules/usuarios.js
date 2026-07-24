@@ -1,4 +1,4 @@
-window.initUsuarios = function() {
+﻿window.initUsuarios = function() {
     loadUsuarios();
 };
 
@@ -21,7 +21,7 @@ function renderUsuariosTable(data) {
             <td>${u.idUsuario}</td>
             <td>${u.username}</td>
             <td>${u.nombre || ''} ${u.primerApellido || ''} ${u.segundoApellido || ''}</td>
-            <td><span class="status-badge" style="background:${u.rol === 'ADMIN' ? 'var(--danger)' : u.rol === 'ALMACEN' ? 'var(--warning)' : 'var(--info)'};color:white;">${u.rol}</span></td>
+            <td><span class="status-badge" style="background:${u.rol === 'ADMIN' ? 'var(--danger)' : u.rol === 'ALMACEN' ? 'var(--warning)' : 'var(--info)'};color:#fff;">${u.rol}</span></td>
             <td><span class="status-badge ${u.activo ? 'active' : 'inactive'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
             <td>${u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString('es-MX') : '-'}</td>
             <td>
@@ -40,7 +40,7 @@ function renderUsuariosTable(data) {
     const html = `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Gestión de Usuarios</h3>
+                <h3 class="card-title">GestiÃ³n de Usuarios</h3>
                 <button class="btn btn-primary" onclick="openUsuarioModal()">
                     <i class="fas fa-plus"></i> Nuevo Usuario
                 </button>
@@ -102,7 +102,7 @@ window.openUsuarioModal = function() {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Tipo de Persona *</label>
-                    <select class="form-control" name="personType" required>
+                    <select class="form-select" name="personType" required>
                         <option value="USUARIO">Usuario</option>
                         <option value="EMPLEADO">Empleado</option>
                     </select>
@@ -114,16 +114,16 @@ window.openUsuarioModal = function() {
                     <input type="email" class="form-control" name="username" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Contraseña *</label>
+                    <label class="form-label">ContraseÃ±a *</label>
                     <input type="password" class="form-control" name="password" required>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Rol *</label>
-                    <select class="form-control" name="role" required>
+                    <select class="form-select" name="role" required>
                         <option value="USER">Usuario</option>
-                        <option value="ALMACEN">Almacén</option>
+                        <option value="ALMACEN">AlmacÃ©n</option>
                         <option value="ADMIN">Administrador</option>
                     </select>
                 </div>
@@ -175,9 +175,9 @@ window.editUsuario = async function(id) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Rol</label>
-                        <select class="form-control" name="role" required>
+                        <select class="form-select" name="role" required>
                             <option value="USER" ${u.rol === 'USER' ? 'selected' : ''}>Usuario</option>
-                            <option value="ALMACEN" ${u.rol === 'ALMACEN' ? 'selected' : ''}>Almacén</option>
+                            <option value="ALMACEN" ${u.rol === 'ALMACEN' ? 'selected' : ''}>AlmacÃ©n</option>
                             <option value="ADMIN" ${u.rol === 'ADMIN' ? 'selected' : ''}>Administrador</option>
                         </select>
                     </div>
@@ -185,7 +185,7 @@ window.editUsuario = async function(id) {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Tipo Persona</label>
-                        <select class="form-control" name="personType">
+                        <select class="form-select" name="personType">
                             <option value="USUARIO" ${u.tipoPersona === 'USUARIO' ? 'selected' : ''}>Usuario</option>
                             <option value="EMPLEADO" ${u.tipoPersona === 'EMPLEADO' ? 'selected' : ''}>Empleado</option>
                         </select>
@@ -235,7 +235,7 @@ window.updateUsuario = async function(id) {
 };
 
 window.deleteUsuario = async function(id) {
-    if (!confirm('¿Estás seguro de desactivar este usuario?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de desactivar este usuario?')) return;
 
     try {
         showLoading();

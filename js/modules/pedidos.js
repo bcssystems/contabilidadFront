@@ -371,11 +371,11 @@ async function guardarPedido() {
   if (!state.detalles || state.detalles.length === 0) { Utils.showToast('Agrega al menos un producto', 'warning'); return; }
 
   const data = {
-    idProveedor: idProveedor,
-    idSucursal: idSucursal,
+    proveedor: { idProveedor },
+    sucursal: { idSucursal },
     nota: nota || null,
     detalles: state.detalles.map(d => ({
-      idProducto: d.idProducto,
+      producto: { idProducto: d.idProducto },
       cantidadPedida: d.cantidad,
       precioCompraUnitario: d.precioUnitario,
     })),

@@ -368,7 +368,7 @@ async function guardarPromocion() {
   } else {
     data.idProducto = null;
     data.detalles = state.comboProductos.map(p => ({
-      idProducto: p.idProducto,
+      producto: { idProducto: p.idProducto },
       cantidad: p.cantidad,
     }));
     if (data.detalles.length === 0) { Utils.showToast('Agrega al menos un producto al combo', 'warning'); return; }

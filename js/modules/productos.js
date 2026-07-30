@@ -708,7 +708,7 @@ async function guardarProducto() {
         const stock = parseInt(document.getElementById('stock_' + s.idSucursal).value) || 0;
         const stockMin = parseInt(document.getElementById('stockMin_' + s.idSucursal).value) || null;
         const stockMax = parseInt(document.getElementById('stockMax_' + s.idSucursal).value) || null;
-        inventarios.push({ idSucursal: s.idSucursal, stock: stock, stockMinimo: stockMin, stockMaximo: stockMax });
+        inventarios.push({ sucursal: { idSucursal: s.idSucursal }, stock: stock, stockMinimo: stockMin, stockMaximo: stockMax });
       });
     } catch (err) {
       Utils.showToast('Error al cargar sucursales', 'error');

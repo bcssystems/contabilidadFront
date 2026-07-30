@@ -145,9 +145,9 @@ async function saveMovimiento() {
     debe: parseFloat(document.getElementById('movimientoDebe').value) || 0,
     haber: parseFloat(document.getElementById('movimientoHaber').value) || 0,
     cuentaContableId: parseInt(document.getElementById('movimientoCuenta').value) || null,
-    asientoId: parseInt(document.getElementById('movimientoAsiento').value) || null,
+    asientoContableId: parseInt(document.getElementById('movimientoAsiento').value) || null,
   };
-  if (!data.cuentaContableId || !data.asientoId) {
+  if (!data.cuentaContableId || !data.asientoContableId) {
     Utils.showToast('Cuenta y asiento son obligatorios', 'warning');
     return;
   }

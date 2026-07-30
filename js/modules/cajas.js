@@ -109,13 +109,14 @@ function abrirModal(id) {
 }
 
 async function guardarCaja() {
+  const idSucursal = parseInt(document.getElementById('cajaSucursal').value);
   const data = {
     nombre: document.getElementById('cajaNombre').value.trim(),
-    idSucursal: parseInt(document.getElementById('cajaSucursal').value),
+    sucursal: { idSucursal },
   };
 
   if (!data.nombre) { Utils.showToast('El nombre es obligatorio', 'warning'); return; }
-  if (!data.idSucursal) { Utils.showToast('Selecciona una sucursal', 'warning'); return; }
+  if (!idSucursal) { Utils.showToast('Selecciona una sucursal', 'warning'); return; }
 
   try {
     if (state.editingId) {

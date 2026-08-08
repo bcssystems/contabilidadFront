@@ -13,7 +13,38 @@ let state = {
 
 export function init() {
   bindEvents();
-  mostrarSelectorCaja();
+  const lastCajaId = localStorage.getItem('lastCajaId');
+  const lastSucursalId = localStorage.getItem('lastSucursalId');
+  if (lastCajaId && lastSucursalId) {
+    autoEntrarCaja(parseInt(lastCajaId), parseInt(lastSucursalId));
+  } else {
+    mostrarSelectorCaja();
+  }
+}
+
+async function autoEntrarCaja(idCaja, idSucursal) {
+  try {
+    const sucursales = await API.get('/sucursales');
+    const sucursal = (sucursales || []).find(s => s.idSucursal === idSucursal);
+    if (!sucursal) {
+      localStorage.removeItem('lastCajaId');
+      localStorage.removeItem('lastSucursalId');
+      mostrarSelectorCaja();
+      return;
+    }
+    const cajas = await API.get('/cajas/sucursal/' + idSucursal);
+    const caja = (cajas || []).find(c => c.idCaja === idCaja);
+    if (!caja) {
+      localStorage.removeItem('lastCajaId');
+      localStorage.removeItem('lastSucursalId');
+      mostrarSelectorCaja();
+      return;
+    }
+    await entrarCaja(idCaja);
+  } catch (err) {
+    Utils.showToast(err.message, 'error');
+    mostrarSelectorCaja();
+  }
 }
 
 function bindEvents() {
@@ -73,7 +104,7 @@ async function mostrarSelectorCaja() {
     const selSuc = document.getElementById('posSucursalSelect');
     selSuc.innerHTML = '<option value="">-- Selecciona una sucursal --</option>' +
       state.sucursales.map(s => `<option value="${s.idSucursal}">${Utils.esc(s.nombre)}</option>`).join('');
-    selSuc.addEventListener('change', async () => {
+    selSuc.onchange = async () => {
       const idSucursal = parseInt(selSuc.value);
       const cajaSel = document.getElementById('posCajaSelect');
       const entrarBtn = document.getElementById('btnEntrarCaja');
@@ -92,7 +123,7 @@ async function mostrarSelectorCaja() {
         cajaSel.disabled = true;
         entrarBtn.disabled = true;
       }
-    });
+    };
 
     const lastCajaId = localStorage.getItem('lastCajaId');
     const lastSucursalId = localStorage.getItem('lastSucursalId');
@@ -108,15 +139,15 @@ async function mostrarSelectorCaja() {
       }, 300);
     }
 
-    document.getElementById('posCajaSelect').addEventListener('change', () => {
+    document.getElementById('posCajaSelect').onchange = () => {
       const id = parseInt(document.getElementById('posCajaSelect').value);
       document.getElementById('btnEntrarCaja').disabled = !id;
-    });
+    };
   } catch (err) { Utils.showToast(err.message, 'error'); }
 }
 
-async function entrarCaja() {
-  const id = parseInt(document.getElementById('posCajaSelect').value);
+async function entrarCaja(cajaId) {
+  const id = cajaId || parseInt(document.getElementById('posCajaSelect').value);
   if (!id) { Utils.showToast('Selecciona una caja', 'warning'); return; }
   try {
     state.caja = await API.get('/cajas/' + id);
@@ -140,7 +171,8 @@ async function iniciarPOS() {
   state.productos = [];
   state.cart = [];
   renderCart();
-  await buscarProductos(true);
+  const results = document.getElementById('posProductResults');
+  if (results) results.classList.add('d-none');
   iniciarPollingCaja();
 }
 

@@ -63,7 +63,7 @@ function renderTable(data) {
       '<td>' + Utils.formatCurrency(item.montoBase) + '</td>' +
       '<td>' + (item.porcentaje != null ? item.porcentaje + '%' : '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.montoComision) + '</td>' +
-      '<td><span class="status-badge ' + (item.estadoComision || 'pendiente').toLowerCase() + '">' + (item.estadoComision || 'PENDIENTE') + '</span></td>' +
+      '<td>' + estadoBadge(item.estadoComision) + '</td>' +
       '<td>' +
         '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-com" data-id="' + item.id + '"><i class="fas fa-edit"></i></button>' +
         '<button class="btn btn-sm btn-outline-danger btn-delete-com" data-id="' + item.id + '"><i class="fas fa-trash"></i></button>' +
@@ -74,6 +74,15 @@ function renderTable(data) {
   tbody.querySelectorAll('.btn-edit-com').forEach(b => b.addEventListener('click', () => openComisionModal(parseInt(b.dataset.id))));
   tbody.querySelectorAll('.btn-delete-com').forEach(b => b.addEventListener('click', () => deleteComision(parseInt(b.dataset.id))));
   renderPagination();
+}
+
+function estadoBadge(estado) {
+  const map = {
+    'PAGADA': 'badge-active',
+    'PENDIENTE': 'badge-warning',
+    'CANCELADA': 'badge-inactive',
+  };
+  return '<span class="badge-status ' + (map[estado] || 'badge-warning') + '">' + (estado || '-') + '</span>';
 }
 
 function renderPagination() {
@@ -146,8 +155,7 @@ async function saveComision() {
   const data = {
     tipoComision: document.getElementById('comisionTipo').value,
     montoBase: montoBase,
-    porcentaje: pct,
-    montoComision: montoBase * pct / 100,
+    porcentajeComision: pct,
     empleadoId: parseInt(document.getElementById('comisionEmpleado').value) || null,
     ventaId: parseInt(document.getElementById('comisionVentaId').value) || null,
   };

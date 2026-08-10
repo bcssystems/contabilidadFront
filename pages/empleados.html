@@ -30,12 +30,13 @@
             <th>ID</th>
             <th>Nombre</th>
             <th>Puesto</th>
+            <th>Sueldo Base</th>
             <th>Estado</th>
             <th style="width:80px"></th>
           </tr>
         </thead>
         <tbody id="tableEmpleadosBody">
-          <tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>
+          <tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -75,6 +76,10 @@
               <option value="TECNICO">T&eacute;cnico</option>
               <option value="COBRANZA">Cobranza</option>
             </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Sueldo Base</label>
+            <input type="number" class="form-control" id="empleadoSueldoBase" step="0.01" min="0">
           </div>
           <div class="form-check">
             <input type="checkbox" class="form-check-input" id="empleadoActivo" checked>

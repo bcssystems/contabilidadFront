@@ -21,7 +21,7 @@ function bindEvents() {
 async function loadEmpleados() {
   const tbody = document.getElementById('tableEmpleadosBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
   try {
     const q = document.getElementById('searchEmpleado')?.value?.trim() || '';
     const p = document.getElementById('filterPuesto')?.value || '';
@@ -31,7 +31,7 @@ async function loadEmpleados() {
     const resp = await API.get('/empleado' + params);
     renderTable(resp);
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
   }
 }
 
@@ -43,7 +43,7 @@ function renderTable(data) {
   totalElements = data.totalElements || 0;
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay empleados</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay empleados</p></div></td></tr>';
     renderPagination();
     return;
   }
@@ -54,7 +54,8 @@ function renderTable(data) {
       '<td>' + item.id + '</td>' +
       '<td>' + Utils.esc(fullName) + '</td>' +
       '<td>' + Utils.esc(item.position || '-') + '</td>' +
-      '<td><span class="status-badge ' + (item.activo ? 'active' : 'inactive') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+      '<td>' + Utils.formatCurrency(item.sueldoBase) + '</td>' +
+      '<td><span class="badge-status ' + (item.activo ? 'badge-active' : 'badge-inactive') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
       '<td><button class="btn btn-sm btn-outline-secondary btn-edit-emp" data-id="' + item.id + '"><i class="fas fa-edit"></i></button></td>' +
     '</tr>';
   }).join('');
@@ -84,6 +85,7 @@ function openEmpleadoModal(id) {
   document.getElementById('empleadoApellido1').value = '';
   document.getElementById('empleadoApellido2').value = '';
   document.getElementById('empleadoPuesto').value = 'VENDEDOR';
+  document.getElementById('empleadoSueldoBase').value = '';
   document.getElementById('empleadoActivo').checked = true;
 
   if (id) {
@@ -94,6 +96,7 @@ function openEmpleadoModal(id) {
       document.getElementById('empleadoApellido1').value = e.primerApellido || '';
       document.getElementById('empleadoApellido2').value = e.segundoApellido || '';
       document.getElementById('empleadoPuesto').value = e.position || 'VENDEDOR';
+      document.getElementById('empleadoSueldoBase').value = e.sueldoBase != null ? e.sueldoBase : '';
       document.getElementById('empleadoActivo').checked = e.activo !== false;
       document.getElementById('empleadoId').value = id;
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
@@ -106,6 +109,7 @@ function openEmpleadoModal(id) {
 
 async function saveEmpleado() {
   const id = document.getElementById('empleadoId').value;
+  const sueldoBaseRaw = document.getElementById('empleadoSueldoBase').value;
   const data = {
     nombre: document.getElementById('empleadoNombre').value.trim(),
     primerApellido: document.getElementById('empleadoApellido1').value.trim(),
@@ -113,6 +117,7 @@ async function saveEmpleado() {
     position: document.getElementById('empleadoPuesto').value,
     personType: 'EMPLEADO',
   };
+  if (sueldoBaseRaw !== '') data.sueldoBase = parseFloat(sueldoBaseRaw) || 0;
   if (id) data.activo = document.getElementById('empleadoActivo').checked;
 
   if (!data.nombre || !data.primerApellido) {

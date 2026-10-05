@@ -64,15 +64,18 @@ function renderTable(data) {
       '<td>' + (item.porcentaje != null ? item.porcentaje + '%' : '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.montoComision) + '</td>' +
       '<td>' + estadoBadge(item.estadoComision) + '</td>' +
-      '<td>' +
-        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-com" data-id="' + item.id + '"><i class="fas fa-edit"></i></button>' +
-        '<button class="btn btn-sm btn-outline-danger btn-delete-com" data-id="' + item.id + '"><i class="fas fa-trash"></i></button>' +
-      '</td>' +
+      '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
     '</tr>'
   ).join('');
 
-  tbody.querySelectorAll('.btn-edit-com').forEach(b => b.addEventListener('click', () => openComisionModal(parseInt(b.dataset.id))));
-  tbody.querySelectorAll('.btn-delete-com').forEach(b => b.addEventListener('click', () => deleteComision(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    button.classList.add('show');
+    Utils.abrirMenuKebab(button, [
+      { icon: 'fa-edit', text: 'Editar comisión', onClick: () => openComisionModal(parseInt(button.dataset.id)) },
+      { icon: 'fa-trash', text: 'Eliminar comisión', danger: true, onClick: () => deleteComision(parseInt(button.dataset.id)) },
+    ]);
+  }));
   renderPagination();
 }
 
@@ -103,15 +106,15 @@ async function loadEmpleadosSelect(selectedId) {
   const select = document.getElementById('comisionEmpleado');
   select.innerHTML = '<option value="">Cargando...</option>';
   try {
-    const resp = await API.get('/empleado?page=0&size=500&sort=id,asc');
-    const list = resp.content || [];
+    const resp = await API.get('/usuarios');
+    const list = Array.isArray(resp) ? resp : (resp.content || []);
     select.innerHTML = '<option value="" disabled ' + (!selectedId ? 'selected' : '') + '>Selecciona un empleado</option>';
     list.forEach(e => {
       const name = [e.nombre, e.primerApellido, e.segundoApellido].filter(Boolean).join(' ');
       const opt = document.createElement('option');
-      opt.value = e.id;
-      opt.textContent = name + ' (#' + e.id + ')';
-      if (selectedId && e.id === selectedId) opt.selected = true;
+       opt.value = e.idUsuario ?? e.id;
+       opt.textContent = name + ' (#' + (e.idUsuario ?? e.id) + ')';
+       if (selectedId && (e.idUsuario ?? e.id) === selectedId) opt.selected = true;
       select.appendChild(opt);
     });
   } catch (_) { select.innerHTML = '<option value="">Error al cargar</option>'; }
@@ -138,7 +141,7 @@ function openComisionModal(id) {
       document.getElementById('comisionVentaId').value = c.ventaId || '';
       document.getElementById('comisionId').value = id;
       calcComisionMonto();
-      loadEmpleadosSelect(c.empleadoId || null);
+      loadEmpleadosSelect(c.usuarioId || null);
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
   } else {
     document.getElementById('comisionModalTitle').textContent = 'Nueva Comisi&oacute;n';
@@ -156,12 +159,12 @@ async function saveComision() {
     tipoComision: document.getElementById('comisionTipo').value,
     montoBase: montoBase,
     porcentajeComision: pct,
-    empleadoId: parseInt(document.getElementById('comisionEmpleado').value) || null,
+    usuarioId: parseInt(document.getElementById('comisionEmpleado').value) || null,
     ventaId: parseInt(document.getElementById('comisionVentaId').value) || null,
   };
   if (id) data.estadoComision = document.getElementById('comisionEstado').value;
 
-  if (!data.empleadoId || !data.montoBase) {
+  if (!data.usuarioId || !data.montoBase) {
     Utils.showToast('Empleado y monto base son obligatorios', 'warning');
     return;
   }

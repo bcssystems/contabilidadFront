@@ -40,15 +40,15 @@ async function loadEmpleadosSelect(selectId, selectedId) {
   if (!select) return;
   select.innerHTML = '<option value="">Cargando...</option>';
   try {
-    const resp = await API.get('/empleado?page=0&size=500&sort=id,asc');
-    const list = resp.content || [];
+    const resp = await API.get('/usuarios');
+    const list = Array.isArray(resp) ? resp : (resp.content || []);
     select.innerHTML = '<option value="" disabled ' + (!selectedId ? 'selected' : '') + '>Selecciona un empleado</option>';
     list.forEach(e => {
       const name = [e.nombre, e.primerApellido, e.segundoApellido].filter(Boolean).join(' ');
       const opt = document.createElement('option');
-      opt.value = e.id;
-      opt.textContent = name + ' (#' + e.id + ')';
-      if (selectedId && e.id === selectedId) opt.selected = true;
+       opt.value = e.idUsuario ?? e.id;
+       opt.textContent = name + ' (#' + (e.idUsuario ?? e.id) + ')';
+       if (selectedId && (e.idUsuario ?? e.id) === selectedId) opt.selected = true;
       select.appendChild(opt);
     });
   } catch (_) {
@@ -61,14 +61,14 @@ function ocultarDesglose() {
 }
 
 async function cargarDesglose() {
-  const empleadoId = document.getElementById('genEmpleado').value;
-  if (!empleadoId) {
+  const usuarioId = document.getElementById('genEmpleado').value;
+  if (!usuarioId) {
     Utils.showToast('Selecciona un empleado', 'warning');
     return;
   }
   document.getElementById('btnCargarDesglose').disabled = true;
   try {
-    desgloseData = await API.get('/nomina/desglose/' + empleadoId);
+    desgloseData = await API.get('/nomina/desglose/' + usuarioId);
     renderDesglose();
   } catch (e) {
     Utils.showToast('Error al cargar desglose: ' + e.message, 'error');
@@ -144,9 +144,9 @@ function recalcNeto() {
 }
 
 async function generarNomina() {
-  const empleadoId = document.getElementById('genEmpleado').value;
+  const usuarioId = document.getElementById('genEmpleado').value;
   const fecha = document.getElementById('genFecha').value;
-  if (!empleadoId) {
+  if (!usuarioId) {
     Utils.showToast('Selecciona un empleado', 'warning');
     return;
   }
@@ -161,7 +161,7 @@ async function generarNomina() {
   try {
     await API.post('/nomina', {
       fecha_nomina: fecha,
-      empleadoId: parseInt(empleadoId),
+      usuarioId: parseInt(usuarioId),
       comisionIds: comisionIds,
       deduccionIds: deduccionIds,
     });
@@ -210,28 +210,29 @@ function renderNominas(data) {
   }
 
   tbody.innerHTML = list.map(item => {
-    let acciones =
-      '<button class="btn btn-sm btn-outline-secondary me-1 btn-view-nom" data-id="' + item.id + '" title="Ver detalle"><i class="fas fa-eye"></i></button>';
-    if (item.estado === 'GENERADA') {
-      acciones += '<button class="btn btn-sm btn-outline-warning me-1 btn-cancel-nom" data-id="' + item.id + '" title="Cancelar"><i class="fas fa-ban"></i></button>';
-    }
-    acciones += '<button class="btn btn-sm btn-outline-danger btn-delete-nom" data-id="' + item.id + '" title="Eliminar"><i class="fas fa-trash"></i></button>';
+    const acciones = '<button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button>';
     return '<tr>' +
       '<td>' + item.id + '</td>' +
       '<td>' + Utils.formatDate(item.fecha_nomina) + '</td>' +
-      '<td>' + Utils.esc(item.empleadoNombre || item.empleadoId || '-') + '</td>' +
+      '<td>' + Utils.esc(item.usuarioNombre || item.usuarioId || '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.sueldoBase) + '</td>' +
       '<td>' + Utils.formatCurrency(item.totalComisiones) + '</td>' +
       '<td>' + Utils.formatCurrency(item.totalDeducciones) + '</td>' +
       '<td><strong>' + Utils.formatCurrency(item.sueldo) + '</strong></td>' +
       '<td>' + estadoBadge(item.estado) + '</td>' +
-      '<td>' + acciones + '</td>' +
+      '<td class="acciones-cell">' + acciones + '</td>' +
     '</tr>';
   }).join('');
 
-  tbody.querySelectorAll('.btn-view-nom').forEach(b => b.addEventListener('click', () => verNomina(list.find(x => x.id == b.dataset.id))));
-  tbody.querySelectorAll('.btn-cancel-nom').forEach(b => b.addEventListener('click', () => cancelarNomina(parseInt(b.dataset.id))));
-  tbody.querySelectorAll('.btn-delete-nom').forEach(b => b.addEventListener('click', () => deleteNomina(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    button.classList.add('show');
+    const item = list.find(row => row.id == button.dataset.id);
+    const actions = [{ icon: 'fa-eye', text: 'Ver detalle', onClick: () => verNomina(item) }];
+    if (item?.estado === 'GENERADA') actions.push({ icon: 'fa-ban', text: 'Cancelar nómina', onClick: () => cancelarNomina(parseInt(button.dataset.id)) });
+    actions.push({ icon: 'fa-trash', text: 'Eliminar nómina', danger: true, onClick: () => deleteNomina(parseInt(button.dataset.id)) });
+    Utils.abrirMenuKebab(button, actions);
+  }));
   renderPaginacionNom();
 }
 
@@ -255,7 +256,7 @@ function verNomina(item) {
   Utils.showDialog('N&oacute;mina #' + item.id,
     '<div class="row g-2">' +
       '<div class="col-6"><small class="text-muted">Fecha</small><div><strong>' + Utils.formatDate(item.fecha_nomina) + '</strong></div></div>' +
-      '<div class="col-6"><small class="text-muted">Empleado</small><div><strong>' + Utils.esc(item.empleadoNombre || '-') + '</strong></div></div>' +
+      '<div class="col-6"><small class="text-muted">Usuario</small><div><strong>' + Utils.esc(item.usuarioNombre || '-') + '</strong></div></div>' +
       '<div class="col-6"><small class="text-muted">Sueldo base</small><div>' + Utils.formatCurrency(item.sueldoBase) + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Comisiones</small><div style="color:var(--success)">+' + Utils.formatCurrency(item.totalComisiones).replace('$', '') + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Deducciones</small><div style="color:var(--danger)">-' + Utils.formatCurrency(item.totalDeducciones).replace('$', '') + '</div></div>' +
@@ -323,21 +324,24 @@ function renderDeducciones(data) {
   tbody.innerHTML = list.map(item =>
     '<tr>' +
       '<td>' + item.id + '</td>' +
-      '<td>' + Utils.esc(item.empleadoNombre || item.empleadoId || '-') + '</td>' +
+      '<td>' + Utils.esc(item.usuarioNombre || item.usuarioId || '-') + '</td>' +
       '<td>' + Utils.esc(item.concepto || '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.monto) + '</td>' +
       '<td>' + Utils.formatDate(item.fecha) + '</td>' +
       '<td>' + (item.corteCajaId ? '#' + item.corteCajaId : '-') + '</td>' +
       '<td>' + estadoBadge(item.estado) + '</td>' +
-      '<td>' +
-        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-ded" data-id="' + item.id + '"><i class="fas fa-edit"></i></button>' +
-        '<button class="btn btn-sm btn-outline-danger btn-delete-ded" data-id="' + item.id + '"><i class="fas fa-trash"></i></button>' +
-      '</td>' +
+       '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
     '</tr>'
   ).join('');
 
-  tbody.querySelectorAll('.btn-edit-ded').forEach(b => b.addEventListener('click', () => openDeduccionModal(parseInt(b.dataset.id))));
-  tbody.querySelectorAll('.btn-delete-ded').forEach(b => b.addEventListener('click', () => deleteDeduccion(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    button.classList.add('show');
+    Utils.abrirMenuKebab(button, [
+      { icon: 'fa-edit', text: 'Editar deducción', onClick: () => openDeduccionModal(parseInt(button.dataset.id)) },
+      { icon: 'fa-trash', text: 'Eliminar deducción', danger: true, onClick: () => deleteDeduccion(parseInt(button.dataset.id)) },
+    ]);
+  }));
   renderPaginacionDed();
 }
 
@@ -392,7 +396,7 @@ function openDeduccionModal(id) {
       document.getElementById('deduccionMonto').value = d.monto != null ? d.monto : '';
       document.getElementById('deduccionFecha').value = d.fecha || new Date().toISOString().split('T')[0];
       document.getElementById('deduccionId').value = id;
-      loadEmpleadosSelect('deduccionEmpleado', d.empleadoId ? parseInt(d.empleadoId) : null);
+      loadEmpleadosSelect('deduccionEmpleado', d.usuarioId ? parseInt(d.usuarioId) : null);
       loadCortesSelect(d.corteCajaId ? parseInt(d.corteCajaId) : null);
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
   } else {
@@ -405,13 +409,13 @@ function openDeduccionModal(id) {
 async function saveDeduccion() {
   const id = document.getElementById('deduccionId').value;
   const data = {
-    empleadoId: parseInt(document.getElementById('deduccionEmpleado').value) || null,
+      usuarioId: parseInt(document.getElementById('deduccionEmpleado').value) || null,
     concepto: document.getElementById('deduccionConcepto').value.trim(),
     monto: parseFloat(document.getElementById('deduccionMonto').value) || 0,
     fecha: document.getElementById('deduccionFecha').value,
     corteCajaId: parseInt(document.getElementById('deduccionCorte').value) || null,
   };
-  if (!data.empleadoId || !data.concepto || !data.monto) {
+  if (!data.usuarioId || !data.concepto || !data.monto) {
     Utils.showToast('Empleado, concepto y monto son obligatorios', 'warning');
     return;
   }

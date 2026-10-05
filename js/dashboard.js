@@ -3,7 +3,7 @@ let _sidebarDelegationReady = false;
 const ENABLED_MODULES = new Set([
   'inicio',
   'personas',
-  'empleados',
+  'usuarios',
   'nomina',
   'asistencia',
   'puntos-geograficos',
@@ -13,7 +13,7 @@ const ENABLED_MODULES = new Set([
 
 const ADMIN_ONLY_MODULES = new Set([
   'personas',
-  'empleados',
+  'usuarios',
   'nomina',
   'puntos-geograficos',
   'revision-asistencia',

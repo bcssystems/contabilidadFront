@@ -1,250 +1,197 @@
-﻿window.initUsuarios = function() {
-    loadUsuarios();
-};
+let editingEmpleadoId = null;
+let currentPage = 0;
+let totalPages = 0;
+let totalElements = 0;
+const PAGE_SIZE = 20;
 
-async function loadUsuarios() {
-    showLoading();
-    try {
-        const data = await api.getUsuarios();
-        renderUsuariosTable(data);
-    } catch (error) {
-        console.error('Error cargando usuarios:', error);
-        showToast('Error al cargar usuarios: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
+export function init() {
+  currentPage = 0;
+  loadEmpleados();
+  bindEvents();
 }
 
-function renderUsuariosTable(data) {
-    const items = data.map(u => `
-        <tr>
-            <td>${u.idUsuario}</td>
-            <td>${u.username}</td>
-            <td>${u.nombre || ''} ${u.primerApellido || ''} ${u.segundoApellido || ''}</td>
-            <td><span class="status-badge" style="background:${u.rol === 'ADMIN' ? 'var(--danger)' : u.rol === 'ALMACEN' ? 'var(--warning)' : 'var(--info)'};color:#fff;">${u.rol}</span></td>
-            <td><span class="status-badge ${u.activo ? 'active' : 'inactive'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
-            <td>${u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString('es-MX') : '-'}</td>
-            <td>
-                <div class="action-btns">
-                    <button class="action-btn edit" onclick="editUsuario(${u.idUsuario})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteUsuario(${u.idUsuario})" title="Desactivar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+const scheduleDays = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 
-    const html = `
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">GestiÃ³n de Usuarios</h3>
-                <button class="btn btn-primary" onclick="openUsuarioModal()">
-                    <i class="fas fa-plus"></i> Nuevo Usuario
-                </button>
-            </div>
-            <div class="card-body">
-                ${data.length === 0 ? `
-                    <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <h3>No hay usuarios</h3>
-                        <p>Comienza creando un nuevo usuario</p>
-                        <button class="btn btn-primary" onclick="openUsuarioModal()">
-                            <i class="fas fa-plus"></i> Nuevo Usuario
-                        </button>
-                    </div>
-                ` : `
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Usuario</th>
-                                    <th>Nombre</th>
-                                    <th>Rol</th>
-                                    <th>Estado</th>
-                                    <th>Registro</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items}
-                            </tbody>
-                        </table>
-                    </div>
-                `}
-            </div>
-        </div>
-    `;
-
-    document.getElementById('pageContent').innerHTML = html;
+function bindEvents() {
+  document.getElementById('btnNuevoEmpleado')?.addEventListener('click', () => openEmpleadoModal(null));
+  document.getElementById('btnGuardarEmpleado')?.addEventListener('click', saveEmpleado);
+  document.getElementById('searchEmpleado')?.addEventListener('input', Utils.debounce(function() { currentPage = 0; loadEmpleados(); }, 300));
+  document.getElementById('filterPuesto')?.addEventListener('change', function() { currentPage = 0; loadEmpleados(); });
+  document.getElementById('empleadoModal')?.addEventListener('hidden.bs.modal', () => { editingEmpleadoId = null; });
 }
 
-window.openUsuarioModal = function() {
-    openModal('Nuevo Usuario', `
-        <form id="usuarioForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Nombre *</label>
-                    <input type="text" class="form-control" name="nombre" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Primer Apellido *</label>
-                    <input type="text" class="form-control" name="primerApellido" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Segundo Apellido</label>
-                    <input type="text" class="form-control" name="segundoApellido">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Tipo de Persona *</label>
-                    <select class="form-select" name="personType" required>
-                        <option value="USUARIO">Usuario</option>
-                        <option value="EMPLEADO">Empleado</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Usuario (email) *</label>
-                    <input type="email" class="form-control" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">ContraseÃ±a *</label>
-                    <input type="password" class="form-control" name="password" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Rol *</label>
-                    <select class="form-select" name="role" required>
-                        <option value="USER">Usuario</option>
-                        <option value="ALMACEN">AlmacÃ©n</option>
-                        <option value="ADMIN">Administrador</option>
-                    </select>
-                </div>
-            </div>
-        </form>
-    `, `
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveUsuario()">Guardar</button>
-    `);
-};
+async function loadEmpleados() {
+  const tbody = document.getElementById('tableEmpleadosBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
+  try {
+    const q = document.getElementById('searchEmpleado')?.value?.trim() || '';
+    const p = document.getElementById('filterPuesto')?.value || '';
+    let params = '?page=' + currentPage + '&size=' + PAGE_SIZE + '&sort=id,asc';
+    if (q) params += '&search=' + encodeURIComponent(q);
+    if (p) params += '&position=' + encodeURIComponent(p);
+    const resp = await API.get('/usuarios');
+    renderTable(resp);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+  }
+}
 
-window.saveUsuario = async function() {
-    const form = document.getElementById('usuarioForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
+function renderTable(data) {
+  const tbody = document.getElementById('tableEmpleadosBody');
+  if (!tbody) return;
+  const list = Array.isArray(data) ? data : (data.content || []);
+  totalPages = 1;
+  totalElements = list.length;
 
-    try {
-        showLoading();
-        await api.createUsuario(data);
-        showToast('Usuario creado exitosamente', 'success');
-        closeModal();
-        loadUsuarios();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay empleados</p></div></td></tr>';
+    renderPagination();
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    const fullName = [item.nombre, item.primerApellido, item.segundoApellido].filter(Boolean).join(' ');
+    return '<tr>' +
+      '<td>' + (item.idUsuario ?? item.id) + '</td>' +
+      '<td>' + Utils.esc(fullName) + '</td>' +
+      '<td>' + Utils.esc(item.position || '-') + '</td>' +
+      '<td>' + Utils.formatCurrency(item.sueldoBase) + '</td>' +
+      '<td><span class="badge-status ' + (item.activo ? 'badge-active' : 'badge-inactive') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+       '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + (item.idUsuario ?? item.id) + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
+    '</tr>';
+  }).join('');
+
+   tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+     event.stopPropagation();
+     button.classList.add('show');
+     Utils.abrirMenuKebab(button, [
+       { icon: 'fa-edit', text: 'Editar usuario', onClick: () => openEmpleadoModal(parseInt(button.dataset.id)) },
+       { icon: 'fa-user-slash', text: 'Desactivar usuario', danger: true, onClick: () => API.del('/usuarios/' + button.dataset.id).then(() => loadEmpleados()).catch(error => Utils.showToast(error.message, 'error')) },
+     ]);
+   }));
+  renderPagination();
+}
+
+function renderPagination() {
+  const container = document.getElementById('paginationEmpleados');
+  if (!container) return;
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+  container.innerHTML =
+    '<div class="d-flex justify-content-between align-items-center"><small class="text-muted">P&aacute;gina ' + (currentPage + 1) + ' de ' + totalPages + ' (' + totalElements + ' registros)</small>' +
+    '<div class="btn-group">' +
+      '<button class="btn btn-sm btn-outline-secondary" id="prevPageEmp" ' + (currentPage === 0 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>' +
+      '<button class="btn btn-sm btn-outline-secondary" id="nextPageEmp" ' + (currentPage >= totalPages - 1 ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>' +
+    '</div></div>';
+  document.getElementById('prevPageEmp')?.addEventListener('click', () => { if (currentPage > 0) { currentPage--; loadEmpleados(); } });
+  document.getElementById('nextPageEmp')?.addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; loadEmpleados(); } });
+}
+
+function openEmpleadoModal(id) {
+  editingEmpleadoId = id;
+  document.getElementById('empleadoId').value = '';
+  document.getElementById('empleadoNombre').value = '';
+  document.getElementById('empleadoApellido1').value = '';
+  document.getElementById('empleadoApellido2').value = '';
+  document.getElementById('empleadoPuesto').value = 'VENDEDOR';
+  document.getElementById('empleadoSueldoBase').value = '';
+  document.getElementById('empleadoSueldoSemanal').value = '';
+  document.getElementById('empleadoUsername').value = '';
+  document.getElementById('empleadoPassword').value = '';
+  document.getElementById('empleadoRole').value = 'USER';
+  document.getElementById('empleadoActivo').checked = true;
+  buildEmployeeSchedule();
+
+  if (id) {
+    document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
+    document.getElementById('btnGuardarEmpleado').textContent = 'Actualizar';
+    API.get('/usuarios/' + id).then(e => {
+      document.getElementById('empleadoNombre').value = e.nombre || '';
+      document.getElementById('empleadoApellido1').value = e.primerApellido || '';
+      document.getElementById('empleadoApellido2').value = e.segundoApellido || '';
+      document.getElementById('empleadoPuesto').value = e.position || 'VENDEDOR';
+      document.getElementById('empleadoSueldoBase').value = e.sueldoBase != null ? e.sueldoBase : '';
+      document.getElementById('empleadoSueldoSemanal').value = e.sueldoSemanal != null ? e.sueldoSemanal : '';
+      document.getElementById('empleadoActivo').checked = e.activo !== false;
+      document.getElementById('empleadoId').value = id;
+      document.getElementById('empleadoUsername').value = e.username || '';
+      document.getElementById('empleadoRole').value = e.rol || 'USER';
+      API.horarioEmpleado(id).then(schedule => buildEmployeeSchedule(schedule.horario || schedule)).catch(() => {});
+    }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
+  } else {
+    document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('btnGuardarEmpleado').textContent = 'Guardar';
+  }
+  new bootstrap.Modal(document.getElementById('empleadoModal')).show();
+}
+
+function buildEmployeeSchedule(schedule) {
+  const target = document.getElementById('empleadoHorarioDias');
+  if (!target) return;
+  const configured = new Map((schedule?.dias || []).map(day => [day.dia, day]));
+  target.innerHTML = scheduleDays.map(day => {
+    const item = configured.get(day);
+    return '<div class="employee-schedule-day border rounded p-2 mb-2" data-day="' + day + '"><div class="row g-2 align-items-end"><div class="col-md-2"><label class="small"><input type="checkbox" class="form-check-input me-1 schedule-active" ' + (item ? 'checked' : '') + '>' + day + '</label></div><div class="col-md-3"><label class="small">Entrada</label><input type="time" class="form-control form-control-sm schedule-entry" value="' + (item?.entrada || '') + '"></div><div class="col-md-3"><label class="small">Salida</label><input type="time" class="form-control form-control-sm schedule-exit" value="' + (item?.salida || '') + '"></div><div class="col-md-4"><label class="small">Break opcional</label><div class="input-group input-group-sm"><input type="time" class="form-control schedule-break-start" value="' + (item?.breaks?.[0]?.inicio || '') + '"><span class="input-group-text">a</span><input type="time" class="form-control schedule-break-end" value="' + (item?.breaks?.[0]?.fin || '') + '"></div></div></div></div>';
+  }).join('');
+}
+
+function readEmployeeSchedule() {
+  return [...document.querySelectorAll('.employee-schedule-day')].filter(row => row.querySelector('.schedule-active').checked).map(row => ({
+    dia: row.dataset.day,
+    entrada: row.querySelector('.schedule-entry').value,
+    salida: row.querySelector('.schedule-exit').value,
+    breaks: row.querySelector('.schedule-break-start').value && row.querySelector('.schedule-break-end').value ? [{ inicio: row.querySelector('.schedule-break-start').value, fin: row.querySelector('.schedule-break-end').value }] : [],
+  }));
+}
+
+async function saveEmpleado() {
+  const id = document.getElementById('empleadoId').value;
+  const sueldoBaseRaw = document.getElementById('empleadoSueldoBase').value;
+  const data = {
+    nombre: document.getElementById('empleadoNombre').value.trim(),
+    primerApellido: document.getElementById('empleadoApellido1').value.trim(),
+    segundoApellido: document.getElementById('empleadoApellido2').value.trim() || null,
+    position: document.getElementById('empleadoPuesto').value,
+    personType: 'EMPLEADO',
+    username: document.getElementById('empleadoUsername').value.trim(),
+    password: document.getElementById('empleadoPassword').value,
+    role: document.getElementById('empleadoRole').value,
+  };
+  if (sueldoBaseRaw !== '') data.sueldoBase = parseFloat(sueldoBaseRaw) || 0;
+  const sueldoSemanalRaw = document.getElementById('empleadoSueldoSemanal').value;
+  if (sueldoSemanalRaw !== '') data.sueldoSemanal = parseFloat(sueldoSemanalRaw) || 0;
+  if (id) data.activo = document.getElementById('empleadoActivo').checked;
+
+  if (!data.nombre || !data.primerApellido) {
+    Utils.showToast('Nombre y primer apellido son obligatorios', 'warning');
+    return;
+  }
+
+  try {
+    if (id) {
+      await API.put('/usuarios/' + id, { ...data, username: undefined, password: undefined });
+      Utils.showToast('Empleado actualizado', 'success');
+    } else {
+      const dias = readEmployeeSchedule();
+      if (!dias.length || dias.some(day => !day.entrada || !day.salida || day.entrada >= day.salida)) {
+        Utils.showToast('Configura al menos un día con entrada y salida válidas.', 'warning');
+        return;
+      }
+      if (!data.username || !data.password) {
+        Utils.showToast('Usuario y contraseña son obligatorios.', 'warning');
+        return;
+      }
+      const usuario = await API.post('/usuarios', data);
+      const horario = await API.post('/horarios', {
+        nombre: document.getElementById('empleadoHorarioNombre').value.trim() || 'Horario semanal',
+        dias,
+      });
+      await API.post('/usuarios/' + encodeURIComponent(usuario.id) + '/horario', { horarioId: horario.id });
+      Utils.showToast('Usuario creado', 'success');
     }
-};
-
-window.editUsuario = async function(id) {
-    try {
-        const u = await api.getUsuario(id);
-        openModal('Editar Usuario', `
-            <form id="usuarioForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" class="form-control" name="nombre" value="${u.nombre || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Primer Apellido</label>
-                        <input type="text" class="form-control" name="primerApellido" value="${u.primerApellido || ''}">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Segundo Apellido</label>
-                        <input type="text" class="form-control" name="segundoApellido" value="${u.segundoApellido || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Rol</label>
-                        <select class="form-select" name="role" required>
-                            <option value="USER" ${u.rol === 'USER' ? 'selected' : ''}>Usuario</option>
-                            <option value="ALMACEN" ${u.rol === 'ALMACEN' ? 'selected' : ''}>AlmacÃ©n</option>
-                            <option value="ADMIN" ${u.rol === 'ADMIN' ? 'selected' : ''}>Administrador</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Tipo Persona</label>
-                        <select class="form-select" name="personType">
-                            <option value="USUARIO" ${u.tipoPersona === 'USUARIO' ? 'selected' : ''}>Usuario</option>
-                            <option value="EMPLEADO" ${u.tipoPersona === 'EMPLEADO' ? 'selected' : ''}>Empleado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" style="display:flex;align-items:center;gap:8px;margin-top:24px;">
-                            <input type="checkbox" name="activo" ${u.activo ? 'checked' : ''}> Activo
-                        </label>
-                    </div>
-                </div>
-            </form>
-        `, `
-            <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            <button class="btn btn-primary" onclick="updateUsuario(${id})">Actualizar</button>
-        `);
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-};
-
-window.updateUsuario = async function(id) {
-    const form = document.getElementById('usuarioForm');
-    const formData = new FormData(form);
-    const role = formData.get('role');
-    const personType = formData.get('personType');
-    const activo = form.querySelector('input[name="activo"]').checked;
-    const data = {
-        nombre: formData.get('nombre') || null,
-        primerApellido: formData.get('primerApellido') || null,
-        segundoApellido: formData.get('segundoApellido') || null,
-        role: role || null,
-        personType: personType || null,
-        activo: activo
-    };
-
-    try {
-        showLoading();
-        await api.updateUsuario(id, data);
-        showToast('Usuario actualizado exitosamente', 'success');
-        closeModal();
-        loadUsuarios();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
-
-window.deleteUsuario = async function(id) {
-    if (!confirm('Â¿EstÃ¡s seguro de desactivar este usuario?')) return;
-
-    try {
-        showLoading();
-        await api.deleteUsuario(id);
-        showToast('Usuario desactivado exitosamente', 'success');
-        loadUsuarios();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-};
+    bootstrap.Modal.getInstance(document.getElementById('empleadoModal'))?.hide();
+    loadEmpleados();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}

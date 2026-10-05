@@ -384,4 +384,55 @@ const Utils = {
     if (value === null || value === undefined) return '$0.00';
     return '$' + Number(value).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   },
+
+  abrirMenuKebab(anchor, items) {
+    this.cerrarMenuKebab();
+    if (!anchor || !items?.length) return;
+    const menu = document.createElement('div');
+    menu.className = 'kebab-menu-float';
+    menu.style.visibility = 'hidden';
+    document.body.appendChild(menu);
+    items.forEach(item => {
+      const option = document.createElement('div');
+      option.className = 'kebab-menu-item' + (item.danger ? ' kebab-danger' : '');
+      option.innerHTML = '<i class="fas ' + item.icon + '"></i><span>' + item.text + '</span>';
+      option.addEventListener('click', event => {
+        event.stopPropagation();
+        this.cerrarMenuKebab();
+        if (typeof item.onClick === 'function') item.onClick();
+      });
+      menu.appendChild(option);
+    });
+    const rect = anchor.getBoundingClientRect();
+    const width = 210;
+    const height = menu.offsetHeight || items.length * 34 + 10;
+    let left = Math.max(8, rect.right - width);
+    let top = rect.bottom + 4;
+    if (left + width > window.innerWidth - 8) left = window.innerWidth - width - 8;
+    if (top + height > window.innerHeight - 8) top = rect.top - height - 4;
+    menu.style.left = left + 'px';
+    menu.style.top = Math.max(8, top) + 'px';
+    menu.style.visibility = 'visible';
+    menu.classList.add('show');
+    const close = () => {
+      if (menu.parentNode) menu.remove();
+      document.removeEventListener('click', onDocument, true);
+      document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close, true);
+    };
+    const onDocument = event => {
+      if (!menu.contains(event.target) && !anchor.contains(event.target)) close();
+    };
+    const onKey = event => { if (event.key === 'Escape') close(); };
+    document.addEventListener('click', onDocument, true);
+    document.addEventListener('keydown', onKey, true);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close, true);
+  },
+
+  cerrarMenuKebab() {
+    document.querySelector('.kebab-menu-float')?.remove();
+    document.querySelectorAll('.btn-kebab-toggle.show').forEach(button => button.classList.remove('show'));
+  },
 };

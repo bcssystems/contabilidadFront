@@ -8,12 +8,12 @@ async function loadStats() {
       API.get('/cuenta-contable?page=0&size=1'),
       API.get('/asiento-contable?page=0&size=1'),
       API.get('/proveedor?page=0&size=1'),
-      API.get('/empleado?page=0&size=1'),
+       API.get('/usuarios'),
     ]);
 
     const setStat = (id, result) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = result.status === 'fulfilled' ? (result.value.totalElements || 0) : '-';
+       if (el) el.textContent = result.status === 'fulfilled' ? (Array.isArray(result.value) ? result.value.length : (result.value.totalElements || 0)) : '-';
     };
 
     setStat('statsCuentas', cuentas);

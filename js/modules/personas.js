@@ -42,15 +42,18 @@ function renderTable(list) {
       '<td><span class="status-badge" style="background:' + roleColor + ';color:#fff;">' + Utils.esc(u.rol || '-') + '</span></td>' +
       '<td><span class="status-badge ' + (u.activo ? 'active' : 'inactive') + '">' + (u.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
       '<td>' + (u.fechaRegistro ? Utils.formatDate(u.fechaRegistro) : '-') + '</td>' +
-      '<td>' +
-        '<button class="btn btn-sm btn-outline-secondary me-1 btn-edit-usr" data-id="' + (u.idUsuario || u.id) + '"><i class="fas fa-edit"></i></button>' +
-        '<button class="btn btn-sm btn-outline-danger btn-delete-usr" data-id="' + (u.idUsuario || u.id) + '"><i class="fas fa-trash"></i></button>' +
-      '</td>' +
+      '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + (u.idUsuario || u.id) + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
     '</tr>';
   }).join('');
 
-  tbody.querySelectorAll('.btn-edit-usr').forEach(b => b.addEventListener('click', () => openUsuarioModal(parseInt(b.dataset.id))));
-  tbody.querySelectorAll('.btn-delete-usr').forEach(b => b.addEventListener('click', () => deleteUsuario(parseInt(b.dataset.id))));
+  tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    button.classList.add('show');
+    Utils.abrirMenuKebab(button, [
+      { icon: 'fa-edit', text: 'Editar usuario', onClick: () => openUsuarioModal(parseInt(button.dataset.id)) },
+      { icon: 'fa-user-slash', text: 'Desactivar usuario', danger: true, onClick: () => deleteUsuario(parseInt(button.dataset.id)) },
+    ]);
+  }));
 }
 
 function openUsuarioModal(id) {

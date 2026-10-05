@@ -1,18 +1,18 @@
 <div class="page-content">
   <div class="page-header">
     <div>
-      <h4><i class="fas fa-user-tie me-2" style="color:var(--primary)"></i>Empleados</h4>
-      <small class="text-muted">Gesti&oacute;n de empleados</small>
+      <h4><i class="fas fa-user-tie me-2" style="color:var(--primary)"></i>Usuarios y personal</h4>
+      <small class="text-muted">Alta unificada de usuarios y empleados</small>
     </div>
     <button class="btn btn-primary ripple" id="btnNuevoEmpleado">
-      <i class="fas fa-plus me-1"></i> Nuevo Empleado
+      <i class="fas fa-plus me-1"></i> Nuevo Usuario
     </button>
   </div>
 
   <div class="filter-bar filter-bar-2cols">
     <div class="input-group">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
-      <input type="text" class="form-control" id="searchEmpleado" placeholder="Buscar empleado...">
+      <input type="text" class="form-control" id="searchEmpleado" placeholder="Buscar usuario...">
     </div>
     <select class="form-select" id="filterPuesto">
       <option value="">Todos los puestos</option>
@@ -49,7 +49,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header border-0">
-        <h5 class="modal-title fw-bold" id="empleadoModalTitle">Nuevo Empleado</h5>
+        <h5 class="modal-title fw-bold" id="empleadoModalTitle">Nuevo Usuario</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -70,6 +70,16 @@
             </div>
           </div>
           <div class="mb-3">
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label">Usuario *</label><input type="text" class="form-control" id="empleadoUsername" required></div>
+              <div class="col-md-6"><label class="form-label">Contraseña *</label><input type="password" class="form-control" id="empleadoPassword"></div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rol</label>
+            <select class="form-select" id="empleadoRole"><option value="USER">Usuario</option><option value="ADMIN">Administrador</option><option value="ALMACEN">Almacén</option></select>
+          </div>
+          <div class="mb-3">
             <label class="form-label">Puesto <span class="text-danger">*</span></label>
             <select class="form-select" id="empleadoPuesto" required>
               <option value="VENDEDOR">Vendedor</option>
@@ -77,19 +87,17 @@
               <option value="COBRANZA">Cobranza</option>
             </select>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Sueldo Base</label>
-            <input type="number" class="form-control" id="empleadoSueldoBase" step="0.01" min="0">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6"><label class="form-label">Sueldo Base</label><input type="number" class="form-control" id="empleadoSueldoBase" step="0.01" min="0"></div>
+            <div class="col-md-6"><label class="form-label">Sueldo Semanal</label><input type="number" class="form-control" id="empleadoSueldoSemanal" step="0.01" min="0"></div>
           </div>
           <div class="border rounded p-3 mb-3">
             <h6 class="mb-3"><i class="fas fa-calendar-week me-1"></i>Horario semanal</h6>
             <div class="row g-2 mb-2">
               <div class="col-md-6"><label class="form-label small">Nombre del horario</label><input class="form-control form-control-sm" id="empleadoHorarioNombre" value="Horario semanal"></div>
-              <div class="col-md-3"><label class="form-label small">Tolerancia entrada</label><input class="form-control form-control-sm" id="empleadoToleranciaEntrada" type="number" min="0" value="0"></div>
-              <div class="col-md-3"><label class="form-label small">Tolerancia salida</label><input class="form-control form-control-sm" id="empleadoToleranciaSalida" type="number" min="0" value="0"></div>
             </div>
             <div id="empleadoHorarioDias"></div>
-            <small class="text-muted">El horario se crea y se asigna al empleado al guardar. Los breaks no cuentan como tiempo laboral.</small>
+            <small class="text-muted">El horario se crea y se asigna al usuario al guardar. Las tolerancias son globales y se configuran en Configuración del sistema.</small>
           </div>
           <div class="form-check">
             <input type="checkbox" class="form-check-input" id="empleadoActivo" checked>

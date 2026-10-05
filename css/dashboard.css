@@ -190,6 +190,19 @@
   color: var(--neon);
   border-left-color: var(--neon);
 }
+.sidebar-item-disabled,
+.sidebar-item-disabled:hover {
+  opacity: 0.42;
+  color: var(--sidebar-text);
+  border-left-color: transparent;
+  cursor: not-allowed;
+}
+.sidebar-development-label {
+  margin-left: auto;
+  color: var(--text-light);
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
 .sidebar-item.active {
   background: rgba(0, 255, 65, 0.1);
   color: var(--neon);

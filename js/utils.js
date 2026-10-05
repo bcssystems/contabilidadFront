@@ -12,14 +12,20 @@ const Utils = {
 
     const toast = document.createElement('div');
     toast.className = 'toast-custom toast-' + type;
-    toast.innerHTML =
-      '<i class="fas ' + (icons[type] || icons.info) + ' toast-icon"></i>' +
-      '<span class="toast-text">' + message + '</span>' +
-      '<button class="toast-close">&times;</button>';
+    const icon = document.createElement('i');
+    icon.className = 'fas ' + (icons[type] || icons.info) + ' toast-icon';
+    const messageNode = document.createElement('span');
+    messageNode.className = 'toast-text';
+    messageNode.textContent = message;
+    const close = document.createElement('button');
+    close.className = 'toast-close';
+    close.type = 'button';
+    close.textContent = '\u00d7';
+    toast.append(icon, messageNode, close);
 
     container.appendChild(toast);
 
-    toast.querySelector('.toast-close').addEventListener('click', function () {
+    close.addEventListener('click', function () {
       Utils.removeToast(toast);
     });
 

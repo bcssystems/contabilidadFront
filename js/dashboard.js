@@ -1,8 +1,64 @@
 let _sidebarDelegationReady = false;
 
+const ENABLED_MODULES = new Set([
+  'inicio',
+  'personas',
+  'empleados',
+  'nomina',
+  'asistencia',
+  'horarios',
+  'puntos-geograficos',
+  'revision-asistencia',
+  'configuracion',
+]);
+
+const ADMIN_ONLY_MODULES = new Set([
+  'personas',
+  'empleados',
+  'nomina',
+  'horarios',
+  'puntos-geograficos',
+  'revision-asistencia',
+  'configuracion',
+]);
+
+function configureSidebarModules() {
+  const role = (localStorage.getItem('userRol') || '').toUpperCase();
+  const isAdmin = role === 'ADMIN';
+  document.querySelectorAll('[data-module]').forEach((link) => {
+    const module = link.dataset.module;
+    const enabled = ENABLED_MODULES.has(module) && (!ADMIN_ONLY_MODULES.has(module) || isAdmin);
+    link.classList.toggle('sidebar-item-disabled', !enabled);
+    link.setAttribute('aria-disabled', String(!enabled));
+    link.dataset.development = enabled ? 'false' : 'true';
+
+    if (!enabled && !link.querySelector('.sidebar-development-label')) {
+      const label = document.createElement('small');
+      label.className = 'sidebar-development-label';
+      label.textContent = isAdmin || !ADMIN_ONLY_MODULES.has(module) ? 'En desarrollo' : 'Solo admin';
+      link.appendChild(label);
+    }
+  });
+}
+
+function closeOtherSubmenus(currentSubmenu) {
+  document.querySelectorAll('.sidebar-submenu.open').forEach((submenu) => {
+    if (submenu !== currentSubmenu) {
+      submenu.classList.remove('open');
+      const toggle = document.querySelector('[data-target="' + submenu.id + '"]');
+      if (toggle) {
+        toggle.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+}
+
 function initSidebarDelegation() {
   if (_sidebarDelegationReady) return;
   _sidebarDelegationReady = true;
+
+  configureSidebarModules();
 
   document.addEventListener('click', (e) => {
     const toggle = e.target.closest('.sidebar-sub-toggle');
@@ -11,8 +67,11 @@ function initSidebarDelegation() {
       const targetId = toggle.dataset.target;
       const submenu = document.getElementById(targetId);
       if (submenu) {
+        const opening = !submenu.classList.contains('open');
+        if (opening) closeOtherSubmenus(submenu);
         submenu.classList.toggle('open');
         toggle.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(opening));
       }
       return;
     }
@@ -20,6 +79,11 @@ function initSidebarDelegation() {
     const link = e.target.closest('[data-view]');
     if (link) {
       e.preventDefault();
+
+      if (link.dataset.development === 'true' || link.getAttribute('aria-disabled') === 'true') {
+        Utils.showToast('Este módulo se encuentra en desarrollo.', 'info');
+        return;
+      }
 
       const ruta = link.getAttribute('data-view');
       const modulo = link.getAttribute('data-module');
@@ -43,6 +107,7 @@ function initSidebarDelegation() {
 
 const Dashboard = {
   init() {
+    configureSidebarModules();
     const username = localStorage.getItem('userNombre') || localStorage.getItem('username') || 'Usuario';
     const displayName = document.getElementById('display-name');
     if (displayName) displayName.textContent = username;

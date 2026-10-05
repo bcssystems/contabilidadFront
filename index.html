@@ -249,8 +249,8 @@
               </li>
             </ul>
           </li>
-          <li>
-            <a href="#" class="sidebar-item sidebar-sub-toggle" data-target="sub-gestion">
+           <li>
+             <a href="#" class="sidebar-item sidebar-sub-toggle" data-target="sub-gestion">
               <i class="fas fa-chevron-right sidebar-item-arrow"></i>
               <i class="fas fa-users-cog sidebar-item-icon"></i>
               <span>Gesti&oacute;n</span>
@@ -274,8 +274,22 @@
                   <span>Comisiones</span>
                 </a>
               </li>
-            </ul>
-          </li>
+             </ul>
+           </li>
+           <li>
+             <a href="#" class="sidebar-item sidebar-sub-toggle" data-target="sub-asistencia" aria-expanded="false">
+               <i class="fas fa-chevron-right sidebar-item-arrow"></i>
+               <i class="fas fa-clock sidebar-item-icon"></i>
+               <span>Asistencia</span>
+             </a>
+             <ul class="sidebar-submenu" id="sub-asistencia">
+               <li><a href="#" class="sidebar-item sidebar-sub-item" data-view="pages/asistencia.html" data-module="asistencia"><i class="fas fa-user-clock sidebar-item-icon"></i><span>Mi asistencia</span></a></li>
+               <li><a href="#" class="sidebar-item sidebar-sub-item" data-view="pages/horarios.html" data-module="horarios"><i class="fas fa-calendar-week sidebar-item-icon"></i><span>Horarios</span></a></li>
+               <li><a href="#" class="sidebar-item sidebar-sub-item" data-view="pages/puntos-geograficos.html" data-module="puntos-geograficos"><i class="fas fa-map-marker-alt sidebar-item-icon"></i><span>Puntos geogr&aacute;ficos</span></a></li>
+               <li><a href="#" class="sidebar-item sidebar-sub-item" data-view="pages/revision-asistencia.html" data-module="revision-asistencia"><i class="fas fa-clipboard-check sidebar-item-icon"></i><span>Revisi&oacute;n</span></a></li>
+               <li><a href="#" class="sidebar-item sidebar-sub-item" data-view="pages/configuracion.html" data-module="configuracion"><i class="fas fa-sliders-h sidebar-item-icon"></i><span>Configuraci&oacute;n</span></a></li>
+             </ul>
+           </li>
           <li>
             <a href="#" class="sidebar-item sidebar-sub-toggle" data-target="sub-auditoria">
               <i class="fas fa-chevron-right sidebar-item-arrow"></i>
@@ -369,6 +383,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/dashboard.js"></script>
   <script>initSidebarDelegation();</script>
   <script src="js/auth.js"></script>

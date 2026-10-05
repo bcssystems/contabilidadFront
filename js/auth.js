@@ -54,6 +54,16 @@ const Auth = {
       localStorage.setItem('userNombre', response.nombre || response.username || usuario);
       localStorage.setItem('userRol', response.rol || 'USER');
 
+      try {
+        const user = await API.get('/auth/me');
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('username', user.username || usuario);
+        localStorage.setItem('userNombre', [user.nombre, user.primerApellido].filter(Boolean).join(' ') || user.username || usuario);
+        localStorage.setItem('userRol', user.rol || user.role || 'USER');
+      } catch (_) {
+        // The token is still valid even when profile hydration is unavailable.
+      }
+
       Utils.showToast('Inicio de sesión exitoso', 'success');
       this.checkAuthStatus();
     } catch (err) {

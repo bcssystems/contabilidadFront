@@ -86,7 +86,8 @@ const API = {
     }
 
     if (response.status === 204) return null;
-    return response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   },
 
   async requestUpload(endpoint, formData) {
@@ -121,7 +122,8 @@ const API = {
         }
         throw new Error(message);
       }
-      return response.json();
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
     } catch (err) {
       throw err;
     }
@@ -150,6 +152,22 @@ const API = {
       method: 'DELETE',
     });
   },
+
+  entrada(formData) { return this.requestUpload('/checador/entrada', formData); },
+  salida(formData) { return this.requestUpload('/checador/salida', formData); },
+  miTablero() { return this.get('/checador/mi-tablero'); },
+  miHorario() { return this.get('/checador/mi-horario'); },
+  horarios() { return this.get('/horarios'); },
+  horarioEmpleado(id) { return this.get('/empleados/' + encodeURIComponent(id) + '/horario'); },
+  guardarHorarioEmpleado(id, body) { return this.put('/empleados/' + encodeURIComponent(id) + '/horario', body); },
+  puntosGeograficos() { return this.get('/puntos-geograficos'); },
+  asistencias() { return this.get('/asistencias'); },
+  aprobarEvidencia(id) { return this.post('/asistencias/evidencias/' + encodeURIComponent(id) + '/aprobar', {}); },
+  rechazarEvidencia(id, body) { return this.post('/asistencias/evidencias/' + encodeURIComponent(id) + '/rechazar', body || {}); },
+  evidenciasPendientes() { return this.get('/asistencias/evidencias/pendientes'); },
+  justificacionesPendientes() { return this.get('/justificaciones/pendientes'); },
+  misJustificaciones() { return this.get('/justificaciones/mias'); },
+  configuracionAsistencia() { return this.get('/configuracion/asistencia'); },
 
   startTokenCheck() {
     setInterval(() => {

@@ -6,7 +6,6 @@ const ENABLED_MODULES = new Set([
   'empleados',
   'nomina',
   'asistencia',
-  'horarios',
   'puntos-geograficos',
   'revision-asistencia',
   'configuracion',
@@ -16,7 +15,6 @@ const ADMIN_ONLY_MODULES = new Set([
   'personas',
   'empleados',
   'nomina',
-  'horarios',
   'puntos-geograficos',
   'revision-asistencia',
   'configuracion',
@@ -37,6 +35,22 @@ function configureSidebarModules() {
       label.className = 'sidebar-development-label';
       label.textContent = isAdmin || !ADMIN_ONLY_MODULES.has(module) ? 'En desarrollo' : 'Solo admin';
       link.appendChild(label);
+    }
+  });
+
+  document.querySelectorAll('.sidebar-sub-toggle').forEach((toggle) => {
+    const submenu = document.getElementById(toggle.dataset.target);
+    const modules = submenu ? [...submenu.querySelectorAll('[data-module]')] : [];
+    const disabled = modules.length > 0 && modules.every(link => link.dataset.development === 'true');
+    toggle.classList.toggle('sidebar-item-disabled', disabled);
+    toggle.setAttribute('aria-disabled', String(disabled));
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.dataset.development = disabled ? 'true' : 'false';
+    if (disabled && !toggle.querySelector('.sidebar-development-label')) {
+      const label = document.createElement('small');
+      label.className = 'sidebar-development-label';
+      label.textContent = 'En desarrollo';
+      toggle.appendChild(label);
     }
   });
 }
@@ -64,6 +78,10 @@ function initSidebarDelegation() {
     const toggle = e.target.closest('.sidebar-sub-toggle');
     if (toggle) {
       e.preventDefault();
+      if (toggle.dataset.development === 'true' || toggle.getAttribute('aria-disabled') === 'true') {
+        Utils.showToast('Este módulo se encuentra en desarrollo.', 'info');
+        return;
+      }
       const targetId = toggle.dataset.target;
       const submenu = document.getElementById(targetId);
       if (submenu) {
@@ -108,6 +126,7 @@ function initSidebarDelegation() {
 const Dashboard = {
   init() {
     configureSidebarModules();
+    initSidebarDelegation();
     const username = localStorage.getItem('userNombre') || localStorage.getItem('username') || 'Usuario';
     const displayName = document.getElementById('display-name');
     if (displayName) displayName.textContent = username;

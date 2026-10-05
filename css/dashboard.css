@@ -197,6 +197,10 @@
   border-left-color: transparent;
   cursor: not-allowed;
 }
+.sidebar-sub-toggle.sidebar-item-disabled .sidebar-item-arrow {
+  opacity: 0.55;
+  transform: none;
+}
 .sidebar-development-label {
   margin-left: auto;
   color: var(--text-light);

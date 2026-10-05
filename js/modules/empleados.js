@@ -10,6 +10,8 @@ export function init() {
   bindEvents();
 }
 
+const scheduleDays = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+
 function bindEvents() {
   document.getElementById('btnNuevoEmpleado')?.addEventListener('click', () => openEmpleadoModal(null));
   document.getElementById('btnGuardarEmpleado')?.addEventListener('click', saveEmpleado);
@@ -87,6 +89,7 @@ function openEmpleadoModal(id) {
   document.getElementById('empleadoPuesto').value = 'VENDEDOR';
   document.getElementById('empleadoSueldoBase').value = '';
   document.getElementById('empleadoActivo').checked = true;
+  buildEmployeeSchedule();
 
   if (id) {
     document.getElementById('empleadoModalTitle').textContent = 'Editar Empleado';
@@ -105,6 +108,25 @@ function openEmpleadoModal(id) {
     document.getElementById('btnGuardarEmpleado').textContent = 'Guardar';
   }
   new bootstrap.Modal(document.getElementById('empleadoModal')).show();
+}
+
+function buildEmployeeSchedule(schedule) {
+  const target = document.getElementById('empleadoHorarioDias');
+  if (!target) return;
+  const configured = new Map((schedule?.dias || []).map(day => [day.dia, day]));
+  target.innerHTML = scheduleDays.map(day => {
+    const item = configured.get(day);
+    return '<div class="employee-schedule-day border rounded p-2 mb-2" data-day="' + day + '"><div class="row g-2 align-items-end"><div class="col-md-2"><label class="small"><input type="checkbox" class="form-check-input me-1 schedule-active" ' + (item ? 'checked' : '') + '>' + day + '</label></div><div class="col-md-3"><label class="small">Entrada</label><input type="time" class="form-control form-control-sm schedule-entry" value="' + (item?.entrada || '') + '"></div><div class="col-md-3"><label class="small">Salida</label><input type="time" class="form-control form-control-sm schedule-exit" value="' + (item?.salida || '') + '"></div><div class="col-md-4"><label class="small">Break opcional</label><div class="input-group input-group-sm"><input type="time" class="form-control schedule-break-start" value="' + (item?.breaks?.[0]?.inicio || '') + '"><span class="input-group-text">a</span><input type="time" class="form-control schedule-break-end" value="' + (item?.breaks?.[0]?.fin || '') + '"></div></div></div></div>';
+  }).join('');
+}
+
+function readEmployeeSchedule() {
+  return [...document.querySelectorAll('.employee-schedule-day')].filter(row => row.querySelector('.schedule-active').checked).map(row => ({
+    dia: row.dataset.day,
+    entrada: row.querySelector('.schedule-entry').value,
+    salida: row.querySelector('.schedule-exit').value,
+    breaks: row.querySelector('.schedule-break-start').value && row.querySelector('.schedule-break-end').value ? [{ inicio: row.querySelector('.schedule-break-start').value, fin: row.querySelector('.schedule-break-end').value }] : [],
+  }));
 }
 
 async function saveEmpleado() {
@@ -130,7 +152,19 @@ async function saveEmpleado() {
       await API.put('/empleado/' + id, data);
       Utils.showToast('Empleado actualizado', 'success');
     } else {
-      await API.post('/empleado', data);
+      const dias = readEmployeeSchedule();
+      if (!dias.length || dias.some(day => !day.entrada || !day.salida || day.entrada >= day.salida)) {
+        Utils.showToast('Configura al menos un día con entrada y salida válidas.', 'warning');
+        return;
+      }
+      const empleado = await API.post('/empleado', data);
+      const horario = await API.post('/horarios', {
+        nombre: document.getElementById('empleadoHorarioNombre').value.trim() || 'Horario semanal',
+        toleranciaEntradaMinutos: Number(document.getElementById('empleadoToleranciaEntrada').value || 0),
+        toleranciaSalidaMinutos: Number(document.getElementById('empleadoToleranciaSalida').value || 0),
+        dias,
+      });
+      await API.post('/empleados/' + encodeURIComponent(empleado.idEmpleado || empleado.id) + '/horario', { horarioId: horario.id });
       Utils.showToast('Empleado creado', 'success');
     }
     bootstrap.Modal.getInstance(document.getElementById('empleadoModal'))?.hide();

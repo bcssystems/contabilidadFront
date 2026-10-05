@@ -137,3 +137,16 @@
     min-width: 100%;
   }
 }
+
+@media (max-width: 575.98px) {
+  #login-right {
+    min-height: 100dvh;
+    padding: 1.25rem;
+  }
+  .login-card { max-width: 100%; }
+  .login-form-icon { width: 64px; height: 64px; font-size: 1.7rem; }
+  .login-form-title { font-size: 1.25rem; }
+  .login-form-sub { font-size: 0.82rem; }
+  .login-footer { margin-top: 1.25rem; }
+  .login-footer small { font-size: 0.68rem; }
+}

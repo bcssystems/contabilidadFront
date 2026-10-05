@@ -942,6 +942,70 @@ body {
   }
 }
 
+@media (max-width: 767.98px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { overflow-x: hidden; }
+  .page-content { width: 100%; min-width: 0; }
+  .page-header {
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+  }
+  .page-header h4 { font-size: 1.05rem; }
+  .page-header .text-muted { font-size: 0.75rem; }
+  .page-header > .btn,
+  .page-header > div + .btn { width: 100%; }
+
+  .filter-bar { gap: 8px; margin-bottom: 1rem; }
+  .filter-bar .form-control,
+  .filter-bar .form-select,
+  .filter-bar > .btn { min-width: 0; width: 100%; }
+  .filter-bar-2cols > div,
+  .filter-bar-2cols > .input-group,
+  .filter-bar-3cols > div,
+  .filter-bar-3cols > .input-group,
+  .filter-bar-3cols > select,
+  .filter-bar-4cols > div { flex: 1 1 100%; min-width: 0; }
+
+  .panel-card { border-radius: 10px; }
+  .page-content .panel-card { padding: 0.85rem; }
+  .page-content .panel-card.overflow-hidden { overflow: visible !important; }
+  .table-responsive,
+  .labor-table-wrap { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  .table-custom { min-width: 640px; }
+  .labor-calendar-grid { min-width: 680px; }
+  .table-custom th,
+  .table-custom td { white-space: nowrap; }
+
+  .btn,
+  .form-control,
+  .form-select,
+  .input-group-text { min-height: 42px; }
+  .btn-sm { min-height: 38px; }
+  .btn-kebab-toggle,
+  .btn-action { min-width: 42px; min-height: 42px; }
+  .kebab-menu-float { max-width: calc(100vw - 16px); }
+
+  .modal-dialog { margin: 0.5rem; }
+  .modal-dialog:not(.modal-fullscreen-sm-down) { max-width: none; }
+  .modal-content { max-height: calc(100dvh - 1rem); }
+  .modal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .modal-footer { gap: 0.5rem; flex-wrap: wrap; }
+  .modal-footer .btn { flex: 1 1 140px; }
+
+  .camera-box { min-height: 190px; }
+  .labor-calendar-day { min-height: 110px; }
+  .employee-schedule-day { overflow: hidden; }
+  .pagination { flex-wrap: wrap; }
+}
+
+@media (max-width: 399.98px) {
+  .page-content .panel-card { padding: 0.7rem; }
+  .page-header h4 { font-size: 0.98rem; }
+  .table-custom { min-width: 600px; }
+  .modal-dialog { margin: 0.25rem; }
+}
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 8px;

@@ -2,7 +2,6 @@ let _sidebarDelegationReady = false;
 
 const ENABLED_MODULES = new Set([
   'inicio',
-  'personas',
   'usuarios',
   'nomina',
   'asistencia',
@@ -12,7 +11,6 @@ const ENABLED_MODULES = new Set([
 ]);
 
 const ADMIN_ONLY_MODULES = new Set([
-  'personas',
   'usuarios',
   'nomina',
   'puntos-geograficos',
@@ -29,13 +27,8 @@ function configureSidebarModules() {
     link.classList.toggle('sidebar-item-disabled', !enabled);
     link.setAttribute('aria-disabled', String(!enabled));
     link.dataset.development = enabled ? 'false' : 'true';
-
-    if (!enabled && !link.querySelector('.sidebar-development-label')) {
-      const label = document.createElement('small');
-      label.className = 'sidebar-development-label';
-      label.textContent = isAdmin || !ADMIN_ONLY_MODULES.has(module) ? 'En desarrollo' : 'Solo admin';
-      link.appendChild(label);
-    }
+    const item = link.closest('li');
+    if (item) item.style.display = enabled ? '' : 'none';
   });
 
   document.querySelectorAll('.sidebar-sub-toggle').forEach((toggle) => {
@@ -46,12 +39,8 @@ function configureSidebarModules() {
     toggle.setAttribute('aria-disabled', String(disabled));
     toggle.setAttribute('aria-expanded', 'false');
     toggle.dataset.development = disabled ? 'true' : 'false';
-    if (disabled && !toggle.querySelector('.sidebar-development-label')) {
-      const label = document.createElement('small');
-      label.className = 'sidebar-development-label';
-      label.textContent = 'En desarrollo';
-      toggle.appendChild(label);
-    }
+    const item = toggle.closest('li');
+    if (item) item.style.display = disabled ? 'none' : '';
   });
 }
 
@@ -140,12 +129,12 @@ const Dashboard = {
   bindEvents() {
     const logoutBtn = document.getElementById('btn-logout');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => Auth.logout());
+      logoutBtn.onclick = () => Auth.logout();
     }
 
     const reloadBtn = document.getElementById('btn-reload');
     if (reloadBtn) {
-      reloadBtn.addEventListener('click', () => Utils.recargarModulo());
+      reloadBtn.onclick = () => Utils.recargarModulo();
     }
 
     const sidebarToggle = document.getElementById('sidebarToggle');

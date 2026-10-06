@@ -1,6 +1,7 @@
 const API = {
   baseUrl: '/api/v1',
   _mediaBaseUrl: undefined,
+  _sessionClosing: false,
   get mediaBaseUrl() {
     if (this._mediaBaseUrl !== undefined) return this._mediaBaseUrl;
     if (window.location.port && window.location.port !== '8887') {
@@ -28,6 +29,9 @@ const API = {
   },
 
   cerrarSesion(mensaje) {
+    if (typeof Auth !== 'undefined' && Auth._loggingOut) return;
+    if (this._sessionClosing) return;
+    this._sessionClosing = true;
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
@@ -165,8 +169,10 @@ const API = {
   aprobarEvidencia(id) { return this.post('/asistencias/evidencias/' + encodeURIComponent(id) + '/aprobar', {}); },
   rechazarEvidencia(id, body) { return this.post('/asistencias/evidencias/' + encodeURIComponent(id) + '/rechazar', body || {}); },
   evidenciasPendientes() { return this.get('/asistencias/evidencias/pendientes'); },
+  evidencias() { return this.get('/asistencias/evidencias'); },
   justificacionesPendientes() { return this.get('/justificaciones/pendientes'); },
   misJustificaciones() { return this.get('/justificaciones/mias'); },
+  generarDeduccionesAsistencia(usuarioId, inicio, fin) { return this.post('/nomina/asistencia/generar', { usuarioId, inicio, fin }); },
   configuracionAsistencia() { return this.get('/configuracion/asistencia'); },
 
   startTokenCheck() {

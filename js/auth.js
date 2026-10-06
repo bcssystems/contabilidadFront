@@ -1,4 +1,5 @@
 const Auth = {
+  _loggingOut: false,
   init() {
     this.bindEvents();
     this.checkAuthStatus();
@@ -53,6 +54,8 @@ const Auth = {
       localStorage.setItem('username', response.username || usuario);
       localStorage.setItem('userNombre', response.nombre || response.username || usuario);
       localStorage.setItem('userRol', response.rol || 'USER');
+      this._loggingOut = false;
+      API._sessionClosing = false;
 
       try {
         const user = await API.get('/auth/me');
@@ -76,6 +79,8 @@ const Auth = {
   },
 
   logout() {
+    if (this._loggingOut) return;
+    this._loggingOut = true;
     const token = localStorage.getItem('access_token');
     if (token) {
       API.post('/auth/logout').catch(() => {});

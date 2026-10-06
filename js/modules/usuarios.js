@@ -1,4 +1,5 @@
 let editingEmpleadoId = null;
+let currentHorarioId = null;
 let currentPage = 0;
 let totalPages = 0;
 let totalElements = 0;
@@ -17,23 +18,29 @@ function bindEvents() {
   document.getElementById('btnGuardarEmpleado')?.addEventListener('click', saveEmpleado);
   document.getElementById('searchEmpleado')?.addEventListener('input', Utils.debounce(function() { currentPage = 0; loadEmpleados(); }, 300));
   document.getElementById('filterPuesto')?.addEventListener('change', function() { currentPage = 0; loadEmpleados(); });
+  document.getElementById('empleadoTipoPersona')?.addEventListener('change', updateEmploymentFields);
   document.getElementById('empleadoModal')?.addEventListener('hidden.bs.modal', () => { editingEmpleadoId = null; });
 }
 
 async function loadEmpleados() {
   const tbody = document.getElementById('tableEmpleadosBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
   try {
-    const q = document.getElementById('searchEmpleado')?.value?.trim() || '';
-    const p = document.getElementById('filterPuesto')?.value || '';
-    let params = '?page=' + currentPage + '&size=' + PAGE_SIZE + '&sort=id,asc';
-    if (q) params += '&search=' + encodeURIComponent(q);
-    if (p) params += '&position=' + encodeURIComponent(p);
     const resp = await API.get('/usuarios');
-    renderTable(resp);
+    const all = Array.isArray(resp) ? resp : (resp.content || []);
+    const q = (document.getElementById('searchEmpleado')?.value || '').trim().toLowerCase();
+    const p = document.getElementById('filterPuesto')?.value || '';
+    const filtered = all.filter(item => {
+      const name = [item.nombre, item.primerApellido, item.segundoApellido, item.username].filter(Boolean).join(' ').toLowerCase();
+      return (!q || name.includes(q)) && (!p || item.position === p);
+    });
+    totalElements = filtered.length;
+    totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    currentPage = Math.min(currentPage, totalPages - 1);
+    renderTable(filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE));
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
   }
 }
 
@@ -41,11 +48,8 @@ function renderTable(data) {
   const tbody = document.getElementById('tableEmpleadosBody');
   if (!tbody) return;
   const list = Array.isArray(data) ? data : (data.content || []);
-  totalPages = 1;
-  totalElements = list.length;
-
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay empleados</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay usuarios</p></div></td></tr>';
     renderPagination();
     return;
   }
@@ -54,10 +58,13 @@ function renderTable(data) {
     const fullName = [item.nombre, item.primerApellido, item.segundoApellido].filter(Boolean).join(' ');
     return '<tr>' +
       '<td>' + (item.idUsuario ?? item.id) + '</td>' +
+      '<td>' + Utils.esc(item.username || '-') + '</td>' +
       '<td>' + Utils.esc(fullName) + '</td>' +
-      '<td>' + Utils.esc(item.position || '-') + '</td>' +
-      '<td>' + Utils.formatCurrency(item.sueldoBase) + '</td>' +
+      '<td>' + Utils.esc(item.rol || '-') + '</td>' +
+      '<td>' + Utils.esc(item.position || item.puesto || item.cargo || '-') + '</td>' +
+      '<td>' + Utils.formatCurrency(item.sueldoSemanal) + '</td>' +
       '<td><span class="badge-status ' + (item.activo ? 'badge-active' : 'badge-inactive') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+      '<td>' + (item.fechaRegistro ? Utils.formatDate(item.fechaRegistro) : '-') + '</td>' +
        '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + (item.idUsuario ?? item.id) + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
     '</tr>';
   }).join('');
@@ -65,10 +72,14 @@ function renderTable(data) {
    tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
      event.stopPropagation();
      button.classList.add('show');
-     Utils.abrirMenuKebab(button, [
-       { icon: 'fa-edit', text: 'Editar usuario', onClick: () => openEmpleadoModal(parseInt(button.dataset.id)) },
-       { icon: 'fa-user-slash', text: 'Desactivar usuario', danger: true, onClick: () => API.del('/usuarios/' + button.dataset.id).then(() => loadEmpleados()).catch(error => Utils.showToast(error.message, 'error')) },
-     ]);
+      const item = list.find(row => String(row.idUsuario ?? row.id) === button.dataset.id);
+      const actions = [{ icon: 'fa-edit', text: 'Editar usuario', onClick: () => openEmpleadoModal(parseInt(button.dataset.id)) }];
+      if (item?.activo) {
+        actions.push({ icon: 'fa-user-slash', text: 'Desactivar usuario', danger: true, onClick: () => toggleUsuario(button.dataset.id, false) });
+      } else {
+        actions.push({ icon: 'fa-user-check', text: 'Activar usuario', onClick: () => toggleUsuario(button.dataset.id, true) });
+      }
+      Utils.abrirMenuKebab(button, actions);
    }));
   renderPagination();
 }
@@ -89,18 +100,20 @@ function renderPagination() {
 
 function openEmpleadoModal(id) {
   editingEmpleadoId = id;
+  currentHorarioId = null;
   document.getElementById('empleadoId').value = '';
   document.getElementById('empleadoNombre').value = '';
   document.getElementById('empleadoApellido1').value = '';
   document.getElementById('empleadoApellido2').value = '';
   document.getElementById('empleadoPuesto').value = 'VENDEDOR';
-  document.getElementById('empleadoSueldoBase').value = '';
+  document.getElementById('empleadoTipoPersona').value = 'EMPLEADO';
   document.getElementById('empleadoSueldoSemanal').value = '';
   document.getElementById('empleadoUsername').value = '';
   document.getElementById('empleadoPassword').value = '';
   document.getElementById('empleadoRole').value = 'USER';
   document.getElementById('empleadoActivo').checked = true;
   buildEmployeeSchedule();
+  updateEmploymentFields();
 
   if (id) {
     document.getElementById('empleadoModalTitle').textContent = 'Editar Usuario';
@@ -109,14 +122,24 @@ function openEmpleadoModal(id) {
       document.getElementById('empleadoNombre').value = e.nombre || '';
       document.getElementById('empleadoApellido1').value = e.primerApellido || '';
       document.getElementById('empleadoApellido2').value = e.segundoApellido || '';
-      document.getElementById('empleadoPuesto').value = e.position || 'VENDEDOR';
-      document.getElementById('empleadoSueldoBase').value = e.sueldoBase != null ? e.sueldoBase : '';
-      document.getElementById('empleadoSueldoSemanal').value = e.sueldoSemanal != null ? e.sueldoSemanal : '';
+      document.getElementById('empleadoPuesto').value = e.position || e.puesto || e.cargo || 'VENDEDOR';
+      document.getElementById('empleadoTipoPersona').value = e.tipoPersona || 'EMPLEADO';
+      document.getElementById('empleadoSueldoSemanal').value = e.sueldoSemanal ?? e.sueldoBase ?? '';
       document.getElementById('empleadoActivo').checked = e.activo !== false;
       document.getElementById('empleadoId').value = id;
       document.getElementById('empleadoUsername').value = e.username || '';
       document.getElementById('empleadoRole').value = e.rol || 'USER';
-      API.horarioEmpleado(id).then(schedule => buildEmployeeSchedule(schedule.horario || schedule)).catch(() => {});
+      updateEmploymentFields();
+      API.horarioEmpleado(id).then(schedule => {
+        const assignment = schedule?.data || schedule;
+        const horario = assignment?.horario || assignment?.data?.horario || assignment;
+        currentHorarioId = horario?.id || assignment?.idHorario || assignment?.horarioId || null;
+        document.getElementById('empleadoHorarioNombre').value = horario?.nombre || 'Horario semanal';
+        buildEmployeeSchedule(horario);
+      }).catch(error => {
+        buildEmployeeSchedule();
+        Utils.showToast('No se pudo cargar el horario: ' + error.message, 'warning');
+      });
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
   } else {
     document.getElementById('empleadoModalTitle').textContent = 'Nuevo Usuario';
@@ -125,18 +148,30 @@ function openEmpleadoModal(id) {
   new bootstrap.Modal(document.getElementById('empleadoModal')).show();
 }
 
+function updateEmploymentFields() {
+  const employee = document.getElementById('empleadoTipoPersona')?.value === 'EMPLEADO';
+  const section = document.getElementById('datosLaboralesSection');
+  if (section) section.classList.remove('d-none');
+  document.getElementById('empleadoPuesto')?.toggleAttribute('required', employee);
+  document.getElementById('empleadoSueldoSemanal')?.toggleAttribute('required', employee);
+}
+
 function buildEmployeeSchedule(schedule) {
   const target = document.getElementById('empleadoHorarioDias');
   if (!target) return;
   const configured = new Map((schedule?.dias || []).map(day => [day.dia, day]));
   target.innerHTML = scheduleDays.map(day => {
     const item = configured.get(day);
-    return '<div class="employee-schedule-day border rounded p-2 mb-2" data-day="' + day + '"><div class="row g-2 align-items-end"><div class="col-md-2"><label class="small"><input type="checkbox" class="form-check-input me-1 schedule-active" ' + (item ? 'checked' : '') + '>' + day + '</label></div><div class="col-md-3"><label class="small">Entrada</label><input type="time" class="form-control form-control-sm schedule-entry" value="' + (item?.entrada || '') + '"></div><div class="col-md-3"><label class="small">Salida</label><input type="time" class="form-control form-control-sm schedule-exit" value="' + (item?.salida || '') + '"></div><div class="col-md-4"><label class="small">Break opcional</label><div class="input-group input-group-sm"><input type="time" class="form-control schedule-break-start" value="' + (item?.breaks?.[0]?.inicio || '') + '"><span class="input-group-text">a</span><input type="time" class="form-control schedule-break-end" value="' + (item?.breaks?.[0]?.fin || '') + '"></div></div></div></div>';
+    return '<div class="employee-schedule-day border rounded p-2 mb-2" data-day="' + day + '"><div class="row g-2 align-items-end"><div class="col-md-2"><label class="small fw-semibold">' + day + '</label></div><div class="col-md-3"><label class="small">Entrada</label><input type="time" class="form-control form-control-sm schedule-entry" value="' + (item?.entrada || '') + '"></div><div class="col-md-3"><label class="small">Salida</label><input type="time" class="form-control form-control-sm schedule-exit" value="' + (item?.salida || '') + '"></div><div class="col-md-4"><label class="small">Break opcional</label><div class="input-group input-group-sm"><input type="time" class="form-control schedule-break-start" value="' + (item?.breaks?.[0]?.inicio || '') + '"><span class="input-group-text">a</span><input type="time" class="form-control schedule-break-end" value="' + (item?.breaks?.[0]?.fin || '') + '"></div></div></div></div>';
   }).join('');
 }
 
-function readEmployeeSchedule() {
-  return [...document.querySelectorAll('.employee-schedule-day')].filter(row => row.querySelector('.schedule-active').checked).map(row => ({
+function readEmployeeSchedule(required = true) {
+  const rows = [...document.querySelectorAll('.employee-schedule-day')].filter(row =>
+    row.querySelector('.schedule-entry').value || row.querySelector('.schedule-exit').value ||
+    row.querySelector('.schedule-break-start').value || row.querySelector('.schedule-break-end').value);
+  if (!rows.length && required) throw new Error('Configura al menos un día de trabajo.');
+  return rows.map(row => ({
     dia: row.dataset.day,
     entrada: row.querySelector('.schedule-entry').value,
     salida: row.querySelector('.schedule-exit').value,
@@ -146,20 +181,20 @@ function readEmployeeSchedule() {
 
 async function saveEmpleado() {
   const id = document.getElementById('empleadoId').value;
-  const sueldoBaseRaw = document.getElementById('empleadoSueldoBase').value;
   const data = {
     nombre: document.getElementById('empleadoNombre').value.trim(),
     primerApellido: document.getElementById('empleadoApellido1').value.trim(),
     segundoApellido: document.getElementById('empleadoApellido2').value.trim() || null,
     position: document.getElementById('empleadoPuesto').value,
-    personType: 'EMPLEADO',
+    personType: document.getElementById('empleadoTipoPersona').value,
     username: document.getElementById('empleadoUsername').value.trim(),
     password: document.getElementById('empleadoPassword').value,
     role: document.getElementById('empleadoRole').value,
   };
-  if (sueldoBaseRaw !== '') data.sueldoBase = parseFloat(sueldoBaseRaw) || 0;
+  const employee = data.personType === 'EMPLEADO';
   const sueldoSemanalRaw = document.getElementById('empleadoSueldoSemanal').value;
   if (sueldoSemanalRaw !== '') data.sueldoSemanal = parseFloat(sueldoSemanalRaw) || 0;
+  if (!employee) data.position = null;
   if (id) data.activo = document.getElementById('empleadoActivo').checked;
 
   if (!data.nombre || !data.primerApellido) {
@@ -168,28 +203,46 @@ async function saveEmpleado() {
   }
 
   try {
+    const dias = readEmployeeSchedule(employee);
+    if (employee && dias.some(day => !day.entrada || !day.salida || day.entrada >= day.salida || day.breaks.some(item => item.inicio >= item.fin))) {
+      Utils.showToast('Configura entradas, salidas y breaks válidos.', 'warning');
+      return;
+    }
     if (id) {
       await API.put('/usuarios/' + id, { ...data, username: undefined, password: undefined });
+      const scheduleData = { nombre: document.getElementById('empleadoHorarioNombre').value.trim() || 'Horario semanal', dias };
+      if (dias.length && currentHorarioId) await API.put('/horarios/' + currentHorarioId, scheduleData);
+      else if (dias.length) {
+        const horario = await API.post('/horarios', scheduleData);
+        await API.guardarHorarioEmpleado(id, { horarioId: horario.id });
+      }
       Utils.showToast('Empleado actualizado', 'success');
     } else {
-      const dias = readEmployeeSchedule();
-      if (!dias.length || dias.some(day => !day.entrada || !day.salida || day.entrada >= day.salida)) {
-        Utils.showToast('Configura al menos un día con entrada y salida válidas.', 'warning');
-        return;
-      }
       if (!data.username || !data.password) {
         Utils.showToast('Usuario y contraseña son obligatorios.', 'warning');
         return;
       }
       const usuario = await API.post('/usuarios', data);
-      const horario = await API.post('/horarios', {
+      const horario = employee ? await API.post('/horarios', {
         nombre: document.getElementById('empleadoHorarioNombre').value.trim() || 'Horario semanal',
         dias,
-      });
-      await API.post('/usuarios/' + encodeURIComponent(usuario.id) + '/horario', { horarioId: horario.id });
+      }) : null;
+      const usuarioId = usuario.id ?? usuario.idUser ?? usuario.idUsuario;
+      if (horario) await API.post('/usuarios/' + encodeURIComponent(usuarioId) + '/horario', { horarioId: horario.id });
       Utils.showToast('Usuario creado', 'success');
     }
     bootstrap.Modal.getInstance(document.getElementById('empleadoModal'))?.hide();
+    loadEmpleados();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function toggleUsuario(id, active) {
+  try {
+    if (!active && !(await Utils.confirmAction('&iquest;Desactivar este usuario?', 'Confirmar', 'Desactivar'))) return;
+    await API.put('/usuarios/' + encodeURIComponent(id), { activo: active });
+    Utils.showToast(active ? 'Usuario activado' : 'Usuario desactivado', 'success');
     loadEmpleados();
   } catch (e) {
     Utils.showToast('Error: ' + e.message, 'error');

@@ -80,7 +80,7 @@ async function cargarDesglose() {
 function renderDesglose() {
   const d = desgloseData;
   if (!d) return;
-  document.getElementById('desgloseSueldoBase').textContent = Utils.formatCurrency(d.sueldoBase);
+  document.getElementById('desgloseSueldoSemanal').textContent = Utils.formatCurrency(d.sueldoSemanal);
   document.getElementById('desgloseTotalComisiones').textContent = Utils.formatCurrency(d.totalComisiones);
   document.getElementById('desgloseTotalDeducciones').textContent = Utils.formatCurrency(d.totalDeducciones);
 
@@ -130,7 +130,7 @@ function renderDesglose() {
 function recalcNeto() {
   const d = desgloseData;
   if (!d) return;
-  const base = parseFloat(d.sueldoBase) || 0;
+  const base = parseFloat(d.sueldoSemanal) || 0;
   let totalCom = 0;
   document.querySelectorAll('.gen-comision:checked').forEach(cb => {
     totalCom += parseFloat(cb.dataset.monto) || 0;
@@ -215,7 +215,7 @@ function renderNominas(data) {
       '<td>' + item.id + '</td>' +
       '<td>' + Utils.formatDate(item.fecha_nomina) + '</td>' +
       '<td>' + Utils.esc(item.usuarioNombre || item.usuarioId || '-') + '</td>' +
-      '<td>' + Utils.formatCurrency(item.sueldoBase) + '</td>' +
+      '<td>' + Utils.formatCurrency(item.sueldoSemanal) + '</td>' +
       '<td>' + Utils.formatCurrency(item.totalComisiones) + '</td>' +
       '<td>' + Utils.formatCurrency(item.totalDeducciones) + '</td>' +
       '<td><strong>' + Utils.formatCurrency(item.sueldo) + '</strong></td>' +
@@ -257,7 +257,7 @@ function verNomina(item) {
     '<div class="row g-2">' +
       '<div class="col-6"><small class="text-muted">Fecha</small><div><strong>' + Utils.formatDate(item.fecha_nomina) + '</strong></div></div>' +
       '<div class="col-6"><small class="text-muted">Usuario</small><div><strong>' + Utils.esc(item.usuarioNombre || '-') + '</strong></div></div>' +
-      '<div class="col-6"><small class="text-muted">Sueldo base</small><div>' + Utils.formatCurrency(item.sueldoBase) + '</div></div>' +
+       '<div class="col-6"><small class="text-muted">Sueldo semanal</small><div>' + Utils.formatCurrency(item.sueldoSemanal) + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Comisiones</small><div style="color:var(--success)">+' + Utils.formatCurrency(item.totalComisiones).replace('$', '') + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Deducciones</small><div style="color:var(--danger)">-' + Utils.formatCurrency(item.totalDeducciones).replace('$', '') + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Total neto</small><div><strong>' + Utils.formatCurrency(item.sueldo) + '</strong></div></div>' +
@@ -298,6 +298,7 @@ async function loadDeducciones() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>Cargando...</p></div></td></tr>';
   try {
+    await sincronizarDeduccionesAsistencia();
     const q = document.getElementById('searchDeduccion')?.value?.trim() || '';
     let params = '?page=' + currentPageDed + '&size=' + PAGE_SIZE + '&sort=id,desc';
     if (q) params += '&search=' + encodeURIComponent(q);
@@ -305,6 +306,22 @@ async function loadDeducciones() {
     renderDeducciones(resp);
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+  }
+}
+
+async function sincronizarDeduccionesAsistencia() {
+  try {
+    const today = new Date();
+    const inicio = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-01';
+    const fin = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    const response = await API.get('/usuarios');
+    const users = Array.isArray(response) ? response : (response.content || []);
+    await Promise.all(users.map(user => {
+      const id = user.idUsuario ?? user.id;
+      return id ? API.generarDeduccionesAsistencia(id, inicio, fin).catch(() => null) : null;
+    }));
+  } catch (_) {
+    // La consulta de deducciones sigue funcionando aunque algún usuario no tenga horario.
   }
 }
 
@@ -337,12 +354,29 @@ function renderDeducciones(data) {
   tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
     event.stopPropagation();
     button.classList.add('show');
+    const item = list.find(row => row.id == button.dataset.id);
+    const actions = [];
+    if (item?.origen === 'ASISTENCIA' && item.estado === 'PENDIENTE') {
+      actions.push({ icon: 'fa-check', text: 'Aprobar deducción', onClick: () => revisarDeduccion(item.id, true) });
+      actions.push({ icon: 'fa-times', text: 'Rechazar deducción', danger: true, onClick: () => revisarDeduccion(item.id, false) });
+    }
+    actions.push({ icon: 'fa-edit', text: 'Editar deducción', onClick: () => openDeduccionModal(parseInt(button.dataset.id)) });
+    actions.push({ icon: 'fa-trash', text: 'Eliminar deducción', danger: true, onClick: () => deleteDeduccion(parseInt(button.dataset.id)) });
     Utils.abrirMenuKebab(button, [
-      { icon: 'fa-edit', text: 'Editar deducción', onClick: () => openDeduccionModal(parseInt(button.dataset.id)) },
-      { icon: 'fa-trash', text: 'Eliminar deducción', danger: true, onClick: () => deleteDeduccion(parseInt(button.dataset.id)) },
+      ...actions,
     ]);
   }));
   renderPaginacionDed();
+}
+
+async function revisarDeduccion(id, approve) {
+  try {
+    await API.post('/deduccion/' + encodeURIComponent(id) + '/' + (approve ? 'aprobar' : 'rechazar'), {});
+    Utils.showToast(approve ? 'Deducción aprobada' : 'Deducción rechazada', 'success');
+    loadDeducciones();
+  } catch (e) {
+    Utils.showToast('Error: ' + e.message, 'error');
+  }
 }
 
 function renderPaginacionDed() {

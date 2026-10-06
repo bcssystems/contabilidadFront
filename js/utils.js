@@ -101,7 +101,10 @@ const Utils = {
   formatDate(dateStr) {
     if (!dateStr) return '-';
     try {
-      return new Date(dateStr).toLocaleDateString('es-MX', {
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr))
+        ? new Date(Number(String(dateStr).slice(0, 4)), Number(String(dateStr).slice(5, 7)) - 1, Number(String(dateStr).slice(8, 10)))
+        : new Date(dateStr);
+      return date.toLocaleDateString('es-MX', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

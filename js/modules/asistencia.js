@@ -107,12 +107,15 @@ async function loadBoard() {
   try {
     const data = await API.miTablero();
     const records = Array.isArray(data) ? data : (data.asistencias || []);
+    const schedule = data.horario?.horario || data.horario;
+    const weekday = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'][new Date().getDay()];
+    const scheduledToday = Boolean(schedule?.dias?.some(day => day.dia === weekday));
     const now = new Date();
     const todayKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     const today = records.find(item => item.fecha === todayKey);
     const hasEntry = Boolean(today?.entrada);
     const hasExit = Boolean(today?.salida);
-    canEnterToday = !hasEntry;
+    canEnterToday = !hasEntry && scheduledToday;
     canExitToday = hasEntry && !hasExit;
     const exitButton = document.getElementById('btnSalida');
     const entryButton = document.getElementById('btnEntrada');
@@ -120,9 +123,10 @@ async function loadBoard() {
     if (entryButton) entryButton.disabled = !canEnterToday;
     if (exitButton) exitButton.disabled = !canExitToday;
     if (selfieButton) selfieButton.disabled = !cameraStream || (!canEnterToday && !canExitToday);
+    if (!scheduledToday && !hasEntry) showMessage('Hoy no tienes horario asignado. Es un día de descanso y no puedes registrar entrada.', 'info');
     target.innerHTML = '<div class="row g-2 mb-3"><div class="col-md-6"><div class="border rounded p-2"><small class="text-muted">Horas semanales</small><strong class="d-block">' + text(data.horasLaboralesSemanales ?? '-') + '</strong></div></div><div class="col-md-6"><div class="border rounded p-2"><small class="text-muted">Registros</small><strong class="d-block">' + records.length + '</strong></div></div></div>' + (records.length ? '<div class="labor-table-wrap"><table class="table table-custom"><thead><tr><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + records.map(item => '<tr><td>' + Utils.formatDate(item.fecha) + '</td><td>' + Utils.formatDateTime(item.entrada) + '</td><td>' + Utils.formatDateTime(item.salida) + '</td><td>' + text(displayStatus(item)) + '</td><td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + text(item.id) + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td></tr>').join('') + '</tbody></table></div>' : '<p class="text-muted mb-0">Aún no hay registros de asistencia.</p>');
     target.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); button.classList.add('show'); const item = records.find(row => String(row.id) === button.dataset.id); Utils.abrirMenuKebab(button, [{ icon: 'fa-eye', text: 'Ver registro', onClick: () => Utils.showDialog('Registro de asistencia', '<div class="row g-3"><div class="col-6"><small class="text-muted">Fecha</small><strong class="d-block">' + Utils.formatDate(item?.fecha) + '</strong></div><div class="col-6"><small class="text-muted">Estado</small><strong class="d-block">' + text(item?.estado || '-') + '</strong></div><div class="col-6"><small class="text-muted">Entrada</small><strong class="d-block">' + Utils.formatDateTime(item?.entrada) + '</strong></div><div class="col-6"><small class="text-muted">Salida</small><strong class="d-block">' + Utils.formatDateTime(item?.salida) + '</strong></div></div>') }]); }));
-    renderCalendar(data.horario?.horario || data.horario);
+    renderCalendar(schedule);
   } catch (error) {
     canEnterToday = true;
     canExitToday = false;
@@ -149,6 +153,13 @@ function displayStatus(item) {
   if (item.estadoUbicacion === 'RECHAZADA') return 'Ubicación rechazada';
   if (item.estado === 'PENDIENTE') return 'Pendiente de revisión';
   return item.estado || '-';
+}
+
+function showMessage(message, type) {
+  const element = document.getElementById('asistenciaMensaje');
+  if (!element) return;
+  element.className = 'alert alert-' + type;
+  element.textContent = message;
 }
 
 function show(message, type) { const el = document.getElementById('asistenciaMensaje'); el.className = 'alert alert-' + type; el.textContent = message; }

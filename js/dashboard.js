@@ -7,6 +7,7 @@ const ENABLED_MODULES = new Set([
   'asistencia',
   'puntos-geograficos',
   'revision-asistencia',
+  'prestamos',
   'configuracion',
 ]);
 
@@ -15,6 +16,7 @@ const ADMIN_ONLY_MODULES = new Set([
   'nomina',
   'puntos-geograficos',
   'revision-asistencia',
+  'prestamos',
   'configuracion',
 ]);
 

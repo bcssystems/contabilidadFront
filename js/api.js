@@ -1,5 +1,5 @@
 const API = {
-  baseUrl: '/api/v1',
+  baseUrl: 'http://localhost:8887/api/v1',
   _mediaBaseUrl: undefined,
   _sessionClosing: false,
   get mediaBaseUrl() {
@@ -133,6 +133,12 @@ const API = {
     }
   },
 
+  async download(endpoint) {
+    const response = await fetch(this.baseUrl + endpoint, { headers: { Authorization: 'Bearer ' + this.getToken() } });
+    if (!response.ok) throw new Error('No se pudo descargar el archivo');
+    return response.blob();
+  },
+
   get(endpoint) {
     return this.request(endpoint);
   },
@@ -174,6 +180,7 @@ const API = {
   misJustificaciones() { return this.get('/justificaciones/mias'); },
   generarDeduccionesAsistencia(usuarioId, inicio, fin) { return this.post('/nomina/asistencia/generar', { usuarioId, inicio, fin }); },
   configuracionAsistencia() { return this.get('/configuracion/asistencia'); },
+  generarDeduccionesPrestamos(fecha) { return this.post('/prestamos/deducciones/generar', { fecha }); },
 
   startTokenCheck() {
     setInterval(() => {

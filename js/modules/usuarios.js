@@ -19,13 +19,15 @@ function bindEvents() {
   document.getElementById('searchEmpleado')?.addEventListener('input', Utils.debounce(function() { currentPage = 0; loadEmpleados(); }, 300));
   document.getElementById('filterPuesto')?.addEventListener('change', function() { currentPage = 0; loadEmpleados(); });
   document.getElementById('empleadoTipoPersona')?.addEventListener('change', updateEmploymentFields);
+  document.getElementById('empleadoSueldoSemanal')?.addEventListener('input', calculateHourlyRate);
+  document.getElementById('empleadoHorarioDias')?.addEventListener('input', calculateHourlyRate);
   document.getElementById('empleadoModal')?.addEventListener('hidden.bs.modal', () => { editingEmpleadoId = null; });
 }
 
 async function loadEmpleados() {
   const tbody = document.getElementById('tableEmpleadosBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
+   tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-user-tie"></i><p>Cargando...</p></div></td></tr>';
   try {
     const resp = await API.get('/usuarios');
     const all = Array.isArray(resp) ? resp : (resp.content || []);
@@ -40,7 +42,7 @@ async function loadEmpleados() {
     currentPage = Math.min(currentPage, totalPages - 1);
     renderTable(filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE));
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+     tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
   }
 }
 
@@ -49,7 +51,7 @@ function renderTable(data) {
   if (!tbody) return;
   const list = Array.isArray(data) ? data : (data.content || []);
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay usuarios</p></div></td></tr>';
+     tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-user-tie"></i><p>No hay usuarios</p></div></td></tr>';
     renderPagination();
     return;
   }
@@ -63,6 +65,7 @@ function renderTable(data) {
       '<td>' + Utils.esc(item.rol || '-') + '</td>' +
       '<td>' + Utils.esc(item.position || item.puesto || item.cargo || '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.sueldoSemanal) + '</td>' +
+      '<td>' + Utils.formatCurrency(item.sueldoHora) + '</td>' +
       '<td><span class="badge-status ' + (item.activo ? 'badge-active' : 'badge-inactive') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
       '<td>' + (item.fechaRegistro ? Utils.formatDate(item.fechaRegistro) : '-') + '</td>' +
        '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + (item.idUsuario ?? item.id) + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
@@ -73,7 +76,7 @@ function renderTable(data) {
      event.stopPropagation();
      button.classList.add('show');
       const item = list.find(row => String(row.idUsuario ?? row.id) === button.dataset.id);
-      const actions = [{ icon: 'fa-edit', text: 'Editar usuario', onClick: () => openEmpleadoModal(parseInt(button.dataset.id)) }];
+       const actions = [{ icon: 'fa-eye', text: 'Ver usuario', onClick: () => viewEmpleado(button.dataset.id) }, { icon: 'fa-edit', text: 'Editar usuario', onClick: () => openEmpleadoModal(parseInt(button.dataset.id)) }];
       if (item?.activo) {
         actions.push({ icon: 'fa-user-slash', text: 'Desactivar usuario', danger: true, onClick: () => toggleUsuario(button.dataset.id, false) });
       } else {
@@ -108,7 +111,7 @@ function openEmpleadoModal(id) {
   document.getElementById('empleadoPuesto').value = 'VENDEDOR';
   document.getElementById('empleadoTipoPersona').value = 'EMPLEADO';
   document.getElementById('empleadoSueldoSemanal').value = '';
-  document.getElementById('empleadoUsername').value = '';
+  document.getElementById('empleadoUsername').value = 'Se generará automáticamente';
   document.getElementById('empleadoPassword').value = '';
   document.getElementById('empleadoRole').value = 'USER';
   document.getElementById('empleadoActivo').checked = true;
@@ -163,7 +166,8 @@ function buildEmployeeSchedule(schedule) {
   target.innerHTML = scheduleDays.map(day => {
     const item = configured.get(day);
     return '<div class="employee-schedule-day border rounded p-2 mb-2" data-day="' + day + '"><div class="row g-2 align-items-end"><div class="col-md-2"><label class="small fw-semibold">' + day + '</label></div><div class="col-md-3"><label class="small">Entrada</label><input type="time" class="form-control form-control-sm schedule-entry" value="' + (item?.entrada || '') + '"></div><div class="col-md-3"><label class="small">Salida</label><input type="time" class="form-control form-control-sm schedule-exit" value="' + (item?.salida || '') + '"></div><div class="col-md-4"><label class="small">Break opcional</label><div class="input-group input-group-sm"><input type="time" class="form-control schedule-break-start" value="' + (item?.breaks?.[0]?.inicio || '') + '"><span class="input-group-text">a</span><input type="time" class="form-control schedule-break-end" value="' + (item?.breaks?.[0]?.fin || '') + '"></div></div></div></div>';
-  }).join('');
+   }).join('');
+   calculateHourlyRate();
 }
 
 function readEmployeeSchedule(required = true) {
@@ -179,6 +183,35 @@ function readEmployeeSchedule(required = true) {
   }));
 }
 
+function calculateHourlyRate() {
+  const salary = Number(document.getElementById('empleadoSueldoSemanal')?.value) || 0;
+  const hours = [...document.querySelectorAll('.employee-schedule-day')].reduce((total, row) => {
+    const entry = row.querySelector('.schedule-entry')?.value;
+    const exit = row.querySelector('.schedule-exit')?.value;
+    if (!entry || !exit) return total;
+    const toMinutes = value => { const [h, m] = value.split(':').map(Number); return h * 60 + m; };
+    let minutes = toMinutes(exit) - toMinutes(entry);
+    const breakStart = row.querySelector('.schedule-break-start')?.value;
+    const breakEnd = row.querySelector('.schedule-break-end')?.value;
+    if (breakStart && breakEnd) minutes -= Math.max(0, toMinutes(breakEnd) - toMinutes(breakStart));
+    return total + Math.max(0, minutes);
+  }, 0);
+  const target = document.getElementById('empleadoPrecioHora');
+  if (target) target.value = hours ? (salary / (hours / 60)).toFixed(2) : '0.00';
+}
+
+async function viewEmpleado(id) {
+  try {
+    const employee = await API.get('/usuarios/' + encodeURIComponent(id));
+    let schedule = null;
+    try { schedule = await API.horarioEmpleado(id); } catch (_) {}
+    const horario = schedule?.horario || schedule;
+    const days = (horario?.dias || []).map(day => '<li>' + Utils.esc(day.dia) + ': ' + Utils.esc(day.entrada || '-') + ' - ' + Utils.esc(day.salida || '-') + '</li>').join('');
+    const name = [employee.nombre, employee.primerApellido, employee.segundoApellido].filter(Boolean).join(' ');
+     Utils.showDialog('Usuario #' + id, '<div class="row g-3"><div class="col-md-6"><small class="text-muted">Nombre</small><strong class="d-block">' + Utils.esc(name) + '</strong></div><div class="col-md-6"><small class="text-muted">Username</small><strong class="d-block">' + Utils.esc(employee.username || '-') + '</strong></div><div class="col-md-6"><small class="text-muted">Puesto</small><strong class="d-block">' + Utils.esc(employee.position || '-') + '</strong></div><div class="col-md-6"><small class="text-muted">Sueldo semanal</small><strong class="d-block">' + Utils.formatCurrency(employee.sueldoSemanal) + '</strong></div><div class="col-md-6"><small class="text-muted">Sueldo por hora</small><strong class="d-block">' + Utils.formatCurrency(employee.sueldoHora) + '</strong></div><div class="col-12"><small class="text-muted">Horario</small><ul class="mb-0">' + (days || '<li>Sin horario asignado</li>') + '</ul></div></div>');
+  } catch (e) { Utils.showToast('Error al consultar usuario: ' + e.message, 'error'); }
+}
+
 async function saveEmpleado() {
   const id = document.getElementById('empleadoId').value;
   const data = {
@@ -187,7 +220,6 @@ async function saveEmpleado() {
     segundoApellido: document.getElementById('empleadoApellido2').value.trim() || null,
     position: document.getElementById('empleadoPuesto').value,
     personType: document.getElementById('empleadoTipoPersona').value,
-    username: document.getElementById('empleadoUsername').value.trim(),
     password: document.getElementById('empleadoPassword').value,
     role: document.getElementById('empleadoRole').value,
   };
@@ -218,8 +250,8 @@ async function saveEmpleado() {
       }
       Utils.showToast('Empleado actualizado', 'success');
     } else {
-      if (!data.username || !data.password) {
-        Utils.showToast('Usuario y contraseña son obligatorios.', 'warning');
+      if (!data.password) {
+         Utils.showToast('La contraseña es obligatoria.', 'warning');
         return;
       }
       const usuario = await API.post('/usuarios', data);

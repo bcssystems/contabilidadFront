@@ -14,6 +14,9 @@
       <button class="nav-link" id="tabDeduccionesBtn" data-bs-toggle="tab" data-bs-target="#tabDeducciones" type="button" role="tab">Deducciones</button>
     </li>
     <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tabComisionesBtn" data-bs-toggle="tab" data-bs-target="#tabComisiones" type="button" role="tab">Comisiones</button>
+    </li>
+    <li class="nav-item" role="presentation">
       <button class="nav-link" id="tabNominasBtn" data-bs-toggle="tab" data-bs-target="#tabNominas" type="button" role="tab">N&oacute;minas</button>
     </li>
   </ul>
@@ -86,12 +89,17 @@
     </div>
 
     <!-- ===== TAB: DEDUCCIONES ===== -->
-    <div class="tab-pane fade" id="tabDeducciones" role="tabpanel">
-      <div class="filter-bar filter-bar-2cols mb-3">
+    <div class="tab-pane fade p-3" id="tabDeducciones" role="tabpanel">
+      <div class="filter-bar filter-grid-3 mb-3">
         <div class="input-group">
           <span class="input-group-text"><i class="fas fa-search"></i></span>
           <input type="text" class="form-control" id="searchDeduccion" placeholder="Buscar deducci&oacute;n...">
         </div>
+        <select class="form-select" id="filterEstadoDeduccion"><option value="">Todos los estados</option><option value="PENDIENTE">Pendiente</option><option value="APROBADA">Aprobada</option><option value="APLICADA">Aplicada</option><option value="RECHAZADA">Rechazada</option></select>
+        <select class="form-select" id="filterOrigenDeduccion"><option value="">Todos los or&iacute;genes</option><option value="ASISTENCIA">Asistencia</option><option value="PRESTAMO">Pr&eacute;stamo</option><option value="MANUAL">Manual</option></select>
+        <select class="form-select" id="filterEmpleadoDeduccion"><option value="">Todos los empleados</option></select>
+        <div class="filter-field"><label for="filterDeduccionDesde">Desde</label><input type="date" class="form-control" id="filterDeduccionDesde"></div>
+        <div class="filter-field"><label for="filterDeduccionHasta">Hasta</label><input type="date" class="form-control" id="filterDeduccionHasta"></div>
         <button class="btn btn-primary ripple" id="btnNuevaDeduccion">
           <i class="fas fa-plus me-1"></i> Nueva Deducci&oacute;n
         </button>
@@ -121,13 +129,28 @@
     </div>
 
     <!-- ===== TAB: NOMINAS ===== -->
-    <div class="tab-pane fade" id="tabNominas" role="tabpanel">
-      <div class="filter-bar filter-bar-2cols mb-3">
+    <div class="tab-pane fade p-3" id="tabComisiones" role="tabpanel">
+      <div class="filter-bar filter-grid-3 mb-3">
+        <div class="input-group"><span class="input-group-text"><i class="fas fa-search"></i></span><input type="text" class="form-control" id="searchComisionNomina" placeholder="Buscar comisión..."></div>
+        <select class="form-select" id="filterEstadoComisionNomina"><option value="">Todos los estados</option><option value="PENDIENTE">Pendiente</option><option value="PAGADA">Pagada</option><option value="CANCELADA">Cancelada</option></select>
+        <div class="filter-field"><label for="filterComisionNominaDesde">Desde</label><input type="date" class="form-control" id="filterComisionNominaDesde"></div>
+        <div class="filter-field"><label for="filterComisionNominaHasta">Hasta</label><input type="date" class="form-control" id="filterComisionNominaHasta"></div>
+        <button class="btn btn-primary ripple" id="btnNuevaComisionNomina"><i class="fas fa-plus me-1"></i> Nueva Comisión</button>
+      </div>
+      <div class="panel-card overflow-hidden"><div class="table-responsive"><table class="table table-custom mb-0">
+        <thead><tr><th>ID</th><th>Empleado</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="tableComisionesNominaBody"><tr><td colspan="7"><div class="empty-state"><i class="fas fa-percent"></i><p>Cargando...</p></div></td></tr></tbody>
+      </table></div></div><div class="mt-3" id="paginationComisionesNomina"></div>
+    </div>
+    <div class="tab-pane fade p-3" id="tabNominas" role="tabpanel">
+      <div class="filter-bar filter-grid-3 mb-3">
         <div class="input-group">
           <span class="input-group-text"><i class="fas fa-search"></i></span>
           <input type="text" class="form-control" id="searchNomina" placeholder="Buscar n&oacute;mina...">
         </div>
-        <div></div>
+        <select class="form-select" id="filterEstadoNomina"><option value="">Todos los estados</option><option value="GENERADA">Generada</option><option value="CANCELADA">Cancelada</option></select>
+        <div class="filter-field"><label for="filterNominaDesde">Desde</label><input type="date" class="form-control" id="filterNominaDesde"></div>
+        <div class="filter-field"><label for="filterNominaHasta">Hasta</label><input type="date" class="form-control" id="filterNominaHasta"></div>
       </div>
       <div class="panel-card overflow-hidden">
         <div class="table-responsive">
@@ -155,6 +178,20 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="comisionNominaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="comisionNominaModalTitle">Nueva Comisión</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="formComisionNomina"><input type="hidden" id="comisionNominaId">
+      <div class="mb-3"><label class="form-label">Empleado *</label><select class="form-select" id="comisionNominaEmpleado"></select></div>
+      <div class="mb-3"><label class="form-label">Concepto</label><input class="form-control" id="comisionNominaConcepto" maxlength="200"></div>
+      <div class="row g-3"><div class="col-md-6"><label class="form-label">Tipo *</label><select class="form-select" id="comisionNominaTipo"><option value="VENTA">Venta</option><option value="COBRANZA">Cobranza</option></select></div>
+      <div class="col-md-6"><label class="form-label">Monto *</label><input type="number" class="form-control" id="comisionNominaMonto" step="0.01" min="0.01"></div></div>
+    </form></div><div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="btnGuardarComisionNomina">Guardar</button></div>
+  </div></div>
+</div>
+
+<div class="modal fade" id="nominaImpresionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="modal-title">N&oacute;mina generada</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p id="nominaImpresionTexto" class="mb-0"></p></div><div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button><button type="button" class="btn btn-primary" id="btnImprimirNomina"><i class="fas fa-print me-1"></i>Imprimir</button></div></div></div></div>
 
 <!-- ===== MODAL: DEDUCCION ===== -->
 <div class="modal fade" id="deduccionModal" tabindex="-1">

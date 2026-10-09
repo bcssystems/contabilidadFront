@@ -7,6 +7,7 @@ const PAGE_SIZE = 20;
 export function init() {
   currentPage = 0;
   loadComisiones();
+  loadEmpleadosSelect(null, 'filterEmpleadoComision');
   bindEvents();
 }
 
@@ -15,15 +16,8 @@ function bindEvents() {
   document.getElementById('btnGuardarComision')?.addEventListener('click', saveComision);
   document.getElementById('searchComision')?.addEventListener('input', Utils.debounce(function() { currentPage = 0; loadComisiones(); }, 300));
   document.getElementById('filterEstadoComision')?.addEventListener('change', function() { currentPage = 0; loadComisiones(); });
-  document.getElementById('comisionMontoBase')?.addEventListener('input', calcComisionMonto);
-  document.getElementById('comisionPorcentaje')?.addEventListener('input', calcComisionMonto);
+  ['filterEmpleadoComision', 'filterComisionDesde', 'filterComisionHasta'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { currentPage = 0; loadComisiones(); }));
   document.getElementById('comisionModal')?.addEventListener('hidden.bs.modal', () => { editingComisionId = null; });
-}
-
-function calcComisionMonto() {
-  const base = parseFloat(document.getElementById('comisionMontoBase')?.value) || 0;
-  const pct = parseFloat(document.getElementById('comisionPorcentaje')?.value) || 0;
-  document.getElementById('comisionMontoCalc').value = Utils.formatCurrency(base * pct / 100);
 }
 
 async function loadComisiones() {
@@ -36,6 +30,12 @@ async function loadComisiones() {
     let params = '?page=' + currentPage + '&size=' + PAGE_SIZE + '&sort=id,desc';
     if (q) params += '&search=' + encodeURIComponent(q);
     if (estado) params += '&estadoComision=' + encodeURIComponent(estado);
+    const empleado = document.getElementById('filterEmpleadoComision')?.value || '';
+    const desde = document.getElementById('filterComisionDesde')?.value || '';
+    const hasta = document.getElementById('filterComisionHasta')?.value || '';
+    if (empleado) params += '&usuarioId=' + empleado;
+    if (desde) params += '&desde=' + desde;
+    if (hasta) params += '&hasta=' + hasta;
     const resp = await API.get('/comision' + params);
     renderTable(resp);
   } catch (e) {
@@ -59,9 +59,9 @@ function renderTable(data) {
   tbody.innerHTML = list.map(item =>
     '<tr>' +
       '<td>' + item.id + '</td>' +
+      '<td>' + Utils.esc(item.usuarioNombre || '-') + '</td>' +
+      '<td>' + Utils.esc(item.concepto || '-') + '</td>' +
       '<td>' + Utils.esc(item.tipoComision || '-') + '</td>' +
-      '<td>' + Utils.formatCurrency(item.montoBase) + '</td>' +
-      '<td>' + (item.porcentaje != null ? item.porcentaje + '%' : '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.montoComision) + '</td>' +
       '<td>' + estadoBadge(item.estadoComision) + '</td>' +
       '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
@@ -102,8 +102,8 @@ function renderPagination() {
   document.getElementById('nextPageCom')?.addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; loadComisiones(); } });
 }
 
-async function loadEmpleadosSelect(selectedId) {
-  const select = document.getElementById('comisionEmpleado');
+async function loadEmpleadosSelect(selectedId, selectId = 'comisionEmpleado') {
+  const select = document.getElementById(selectId);
   select.innerHTML = '<option value="">Cargando...</option>';
   try {
     const resp = await API.get('/usuarios');
@@ -124,10 +124,9 @@ function openComisionModal(id) {
   editingComisionId = id;
   document.getElementById('comisionId').value = '';
   document.getElementById('comisionTipo').value = 'VENTA';
+  document.getElementById('comisionConcepto').value = '';
   document.getElementById('comisionEstado').value = 'PENDIENTE';
-  document.getElementById('comisionMontoBase').value = '';
-  document.getElementById('comisionPorcentaje').value = '';
-  document.getElementById('comisionMontoCalc').value = '';
+  document.getElementById('comisionMonto').value = '';
   document.getElementById('comisionVentaId').value = '';
 
   if (id) {
@@ -135,12 +134,11 @@ function openComisionModal(id) {
     document.getElementById('btnGuardarComision').textContent = 'Actualizar';
     API.get('/comision/' + id).then(c => {
       document.getElementById('comisionTipo').value = c.tipoComision || 'VENTA';
+      document.getElementById('comisionConcepto').value = c.concepto || '';
       document.getElementById('comisionEstado').value = c.estadoComision || 'PENDIENTE';
-      document.getElementById('comisionMontoBase').value = c.montoBase || '';
-      document.getElementById('comisionPorcentaje').value = c.porcentaje || '';
+      document.getElementById('comisionMonto').value = c.montoComision || '';
       document.getElementById('comisionVentaId').value = c.ventaId || '';
       document.getElementById('comisionId').value = id;
-      calcComisionMonto();
       loadEmpleadosSelect(c.usuarioId || null);
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
   } else {
@@ -153,19 +151,18 @@ function openComisionModal(id) {
 
 async function saveComision() {
   const id = document.getElementById('comisionId').value;
-  const montoBase = parseFloat(document.getElementById('comisionMontoBase').value) || 0;
-  const pct = parseFloat(document.getElementById('comisionPorcentaje').value) || 0;
+  const monto = parseFloat(document.getElementById('comisionMonto').value) || 0;
   const data = {
     tipoComision: document.getElementById('comisionTipo').value,
-    montoBase: montoBase,
-    porcentajeComision: pct,
+    concepto: document.getElementById('comisionConcepto').value.trim(),
+    monto: monto,
     usuarioId: parseInt(document.getElementById('comisionEmpleado').value) || null,
     ventaId: parseInt(document.getElementById('comisionVentaId').value) || null,
   };
   if (id) data.estadoComision = document.getElementById('comisionEstado').value;
 
-  if (!data.usuarioId || !data.montoBase) {
-    Utils.showToast('Empleado y monto base son obligatorios', 'warning');
+  if (!data.usuarioId || !data.monto || !data.concepto) {
+    Utils.showToast('Empleado, concepto y monto son obligatorios', 'warning');
     return;
   }
   try {

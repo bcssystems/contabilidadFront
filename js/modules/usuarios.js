@@ -227,7 +227,12 @@ async function saveEmpleado() {
   const sueldoSemanalRaw = document.getElementById('empleadoSueldoSemanal').value;
   if (sueldoSemanalRaw !== '') data.sueldoSemanal = parseFloat(sueldoSemanalRaw) || 0;
   if (!employee) data.position = null;
-  if (id) data.activo = document.getElementById('empleadoActivo').checked;
+    if (id) data.activo = document.getElementById('empleadoActivo').checked;
+    const nuevaPassword = data.password.trim();
+    if (id) {
+      if (nuevaPassword) data.password = nuevaPassword;
+      else delete data.password;
+    }
 
   if (!data.nombre || !data.primerApellido) {
     Utils.showToast('Nombre y primer apellido son obligatorios', 'warning');
@@ -241,7 +246,7 @@ async function saveEmpleado() {
       return;
     }
     if (id) {
-      await API.put('/usuarios/' + id, { ...data, username: undefined, password: undefined });
+      await API.put('/usuarios/' + id, { ...data, username: undefined });
       const scheduleData = { nombre: document.getElementById('empleadoHorarioNombre').value.trim() || 'Horario semanal', dias };
       if (dias.length && currentHorarioId) await API.put('/horarios/' + currentHorarioId, scheduleData);
       else if (dias.length) {

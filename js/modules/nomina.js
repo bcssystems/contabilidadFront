@@ -287,9 +287,16 @@ function renderPaginacionNom() {
   document.getElementById('nextPageNom')?.addEventListener('click', () => { if (currentPageNom < totalPagesNom - 1) { currentPageNom++; loadNominas(); } });
 }
 
-function verNomina(item) {
+async function verNomina(item) {
   if (!item) return;
   const asiento = item.asientoId ? item.asientoId : 'Auto generado';
+  let desglose = null;
+  try { desglose = await API.get('/nomina/' + item.id + '/desglose'); } catch (_) { /* El resumen sigue disponible. */ }
+  const percepciones = '<div class="mt-3"><strong>Percepciones</strong><div class="small mt-1">' +
+    '<div class="d-flex justify-content-between"><span>Sueldo base</span><span>' + Utils.formatCurrency(item.sueldoBase) + '</span></div>' +
+    ((desglose?.comisiones || []).map(c => '<div class="d-flex justify-content-between"><span>' + Utils.esc(c.concepto || 'Comisión') + '</span><span>+' + Utils.formatCurrency(c.montoComision).replace('$', '') + '</span></div>').join('')) + '</div></div>';
+  const deducciones = '<div class="mt-3"><strong>Deducciones</strong><div class="small mt-1">' +
+    ((desglose?.deducciones || []).length ? desglose.deducciones.map(d => '<div class="d-flex justify-content-between"><span>' + Utils.esc(d.concepto || 'Deducción') + '</span><span>-' + Utils.formatCurrency(d.monto).replace('$', '') + '</span></div>').join('') : '<div class="text-muted">Sin deducciones</div>') + '</div></div>';
   Utils.showDialog('N&oacute;mina #' + item.id,
     '<div class="row g-2">' +
       '<div class="col-6"><small class="text-muted">Fecha</small><div><strong>' + Utils.formatDate(item.fecha_nomina) + '</strong></div></div>' +
@@ -300,7 +307,7 @@ function verNomina(item) {
       '<div class="col-6"><small class="text-muted">Total neto</small><div><strong>' + Utils.formatCurrency(item.sueldo) + '</strong></div></div>' +
       '<div class="col-6"><small class="text-muted">Estado</small><div>' + estadoBadge(item.estado) + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Asiento contable</small><div>' + Utils.esc(asiento) + '</div></div>' +
-    '</div>'
+       '</div>' + percepciones + deducciones
   );
 }
 

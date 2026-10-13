@@ -539,26 +539,26 @@ function imprimirTicket(venta) {
   <meta charset="UTF-8">
   <title>Ticket - Venta #${venta.idVenta || ''}</title>
   <style>
-    @page { size: letter; margin: 0.6in; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; font-size: 12px; color: #000; padding: 20px; }
-    .header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #1a3a5c; padding-bottom: 10px; }
-    .header h1 { font-size: 22px; font-weight: bold; color: #1a3a5c; }
+     @page { size: 80mm auto; margin: 0; }
+     * { margin: 0; padding: 0; box-sizing: border-box; }
+     body { width: 72mm; max-width: 72mm; overflow-wrap: anywhere; font-family: 'Courier New', monospace; font-size: 10px; color: #000; padding: 3mm 2mm; }
+     .header { text-align: center; margin-bottom: 6px; border-bottom: 1px solid #1a3a5c; padding-bottom: 5px; }
+     .header h1 { font-size: 16px; font-weight: bold; color: #1a3a5c; }
     .header .folio { font-size: 13px; color: #1a3a5c; font-weight: 600; margin-top: 4px; }
-    .divider { border-top: 1px dashed #000; margin: 8px 0; }
-    .info-grid { width: 100%; font-size: 11px; margin-bottom: 8px; }
-    .info-grid td { padding: 2px 4px; }
-    table.detalles { width: 100%; border-collapse: collapse; margin: 10px 0; }
+     .divider { border-top: 1px dashed #000; margin: 5px 0; }
+     .info-grid { width: 100%; table-layout: fixed; font-size: 9px; margin-bottom: 5px; }
+     .info-grid td { padding: 1px; word-break: break-word; }
+     table.detalles { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 6px 0; }
     table.detalles thead { background: #1a3a5c; color: #fff; }
-    table.detalles th { font-size: 9px; text-align: left; padding: 6px 8px; }
+     table.detalles th { font-size: 8px; text-align: left; padding: 4px 2px; }
     table.detalles th.right, table.detalles td.right { text-align: right; }
     table.detalles th.center, table.detalles td.center { text-align: center; }
-    table.detalles td { padding: 5px 8px; border-bottom: 1px solid #e0e0e0; font-size: 11px; }
-    .totals { width: 100%; margin-top: 4px; border-collapse: collapse; }
-    .totals td { padding: 3px 8px; font-size: 11px; }
+     table.detalles td { padding: 3px 2px; border-bottom: 1px solid #e0e0e0; font-size: 9px; word-break: break-word; }
+     .totals { width: 100%; table-layout: fixed; margin-top: 3px; border-collapse: collapse; }
+     .totals td { padding: 2px; font-size: 9px; }
     .totals td:last-child { text-align: right; }
     .totals .total-row td { font-size: 14px; font-weight: bold; border-top: 2px solid #000; padding-top: 6px; }
-    .footer { text-align: center; margin-top: 20px; font-size: 10px; color: #888; }
+     .footer { text-align: center; margin-top: 8px; font-size: 8px; color: #888; }
   </style>
 </head>
 <body>
@@ -573,7 +573,8 @@ function imprimirTicket(venta) {
     <tr><td><strong>Tipo</strong></td><td>${venta.tipoVenta || 'CONTADO'}</td><td><strong>Folio</strong></td><td>#${venta.idVenta || ''}</td></tr>
   </table>
   <div class="divider"></div>
-  <table class="detalles">
+   <div style="font-weight:bold;font-size:9px;margin-top:4px">Desglose de productos</div>
+   <table class="detalles">
     <thead><tr><th style="width:45%">Descripción</th><th class="center" style="width:10%">Cant</th><th class="right" style="width:20%">Precio</th><th class="right" style="width:25%">Subtotal</th></tr></thead>
     <tbody>${detalleRows || '<tr><td colspan="4" class="center">Sin detalles</td></tr>'}</tbody>
   </table>
@@ -583,7 +584,7 @@ function imprimirTicket(venta) {
     <tr><td>Descuento</td><td>-$${(venta.descuento || 0).toFixed(2)}</td></tr>
     <tr class="total-row"><td>TOTAL</td><td>$${(venta.total || 0).toFixed(2)}</td></tr>
   </table>
-  ${pagoRows ? `<div class="divider"></div><table class="totals"><tr><td colspan="2"><strong>Pagos</strong></td></tr>${pagoRows}</table>` : ''}
+   ${pagoRows ? `<div class="divider"></div><table class="totals"><tr><td colspan="2"><strong>Desglose de pagos</strong></td></tr>${pagoRows}</table>` : ''}
   <div class="footer"><p>OMI Contabilidad — Comprobante interno de venta</p><p>${fechaStr} ${horaStr}</p></div>
 </body>
 </html>`);

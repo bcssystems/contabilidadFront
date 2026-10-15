@@ -69,6 +69,9 @@ const Auth = {
 
       Utils.showToast('Inicio de sesión exitoso', 'success');
       this.checkAuthStatus();
+      if (typeof Dashboard !== 'undefined' && typeof Dashboard.showSpecialUserMessage === 'function') {
+        Dashboard.showSpecialUserMessage(localStorage.getItem('username'));
+      }
     } catch (err) {
       Utils.showToast(err.message, 'error');
     } finally {

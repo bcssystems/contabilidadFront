@@ -115,6 +115,16 @@ function initSidebarDelegation() {
 }
 
 const Dashboard = {
+  showSpecialUserMessage(username) {
+    const allowedUsers = new Set(['bucordero', 'ngfonseca']);
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+    if (!allowedUsers.has(normalizedUsername)) return;
+
+    const modal = document.getElementById('specialUserMessageModal');
+    if (!modal || typeof bootstrap === 'undefined') return;
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+  },
+
   init() {
     configureSidebarModules();
     initSidebarDelegation();

@@ -122,6 +122,47 @@ const Dashboard = {
 
     const modal = document.getElementById('specialUserMessageModal');
     if (!modal || typeof bootstrap === 'undefined') return;
+
+    const range = document.getElementById('specialLoveRange');
+    const value = document.getElementById('specialLoveValue');
+    const message = document.getElementById('specialLoveMessage');
+    const questionView = document.getElementById('specialQuestionView');
+    const finalView = document.getElementById('specialFinalView');
+    const continueButton = document.getElementById('specialLoveContinue');
+    const title = document.getElementById('specialUserMessageTitle');
+    if (!range || !value || !message || !questionView || !finalView || !continueButton || !title) return;
+
+    const updateMessage = () => {
+      const selected = Number(range.value);
+      value.textContent = String(selected);
+      if (selected <= 100) message.textContent = 'Poquito, pero cuenta ❤️';
+      else if (selected <= 500) message.textContent = 'Awww, eso ya es bastante ❤️';
+      else if (selected < 1000) message.textContent = 'Me quieres muchísimo ❤️';
+      else message.textContent = 'Sabía que me querías al máximo ❤️';
+    };
+
+    if (!modal.dataset.specialMessageBound) {
+      modal.dataset.specialMessageBound = 'true';
+      range.addEventListener('input', updateMessage);
+      continueButton.addEventListener('click', () => {
+        questionView.classList.add('d-none');
+        finalView.classList.remove('d-none');
+        title.textContent = 'Awww';
+      });
+      modal.addEventListener('hidden.bs.modal', () => {
+        range.value = '1';
+        questionView.classList.remove('d-none');
+        finalView.classList.add('d-none');
+        title.textContent = '¿Cuánto me quieres?';
+        updateMessage();
+      });
+    }
+
+    range.value = '1';
+    questionView.classList.remove('d-none');
+    finalView.classList.add('d-none');
+    title.textContent = '¿Cuánto me quieres?';
+    updateMessage();
     bootstrap.Modal.getOrCreateInstance(modal).show();
   },
 

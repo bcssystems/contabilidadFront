@@ -14,9 +14,17 @@ export function init() {
   currentPageDed = 0;
   editingDeduccionId = null;
   desgloseData = null;
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date();
+  const todayValue = today.toISOString().split('T')[0];
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6);
+  const startValue = start.toISOString().split('T')[0];
   const dateInput = document.getElementById('genFecha');
-  if (dateInput) dateInput.value = today;
+  const startInput = document.getElementById('genFechaInicio');
+  const endInput = document.getElementById('genFechaFin');
+  if (dateInput) dateInput.value = todayValue;
+  if (startInput) startInput.value = startValue;
+  if (endInput) endInput.value = todayValue;
   loadNominas();
   loadDeducciones();
   loadComisionesNomina();
@@ -39,6 +47,7 @@ function bindEvents() {
   document.getElementById('searchNomina')?.addEventListener('input', Utils.debounce(function() { currentPageNom = 0; loadNominas(); }, 300));
   ['filterEstadoNomina', 'filterNominaDesde', 'filterNominaHasta'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { currentPageNom = 0; loadNominas(); }));
   document.getElementById('genEmpleado')?.addEventListener('change', function() { desgloseData = null; ocultarDesglose(); });
+  ['genFechaInicio', 'genFechaFin'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { desgloseData = null; ocultarDesglose(); }));
   document.getElementById('deduccionModal')?.addEventListener('hidden.bs.modal', () => { editingDeduccionId = null; });
   document.getElementById('btnNuevaComisionNomina')?.addEventListener('click', () => openComisionNomina(null));
   document.getElementById('btnGuardarComisionNomina')?.addEventListener('click', saveComisionNomina);
@@ -77,13 +86,19 @@ function ocultarDesglose() {
 
 async function cargarDesglose() {
   const usuarioId = document.getElementById('genEmpleado').value;
+  const inicio = document.getElementById('genFechaInicio').value;
+  const fin = document.getElementById('genFechaFin').value;
   if (!usuarioId) {
     Utils.showToast('Selecciona un empleado', 'warning');
     return;
   }
+  if (!inicio || !fin || inicio > fin) {
+    Utils.showToast('Indica un periodo de nómina válido', 'warning');
+    return;
+  }
   document.getElementById('btnCargarDesglose').disabled = true;
   try {
-    desgloseData = await API.get('/nomina/desglose/' + usuarioId);
+    desgloseData = await API.get('/nomina/desglose/' + usuarioId + '?inicio=' + encodeURIComponent(inicio) + '&fin=' + encodeURIComponent(fin));
     renderDesglose();
   } catch (e) {
     Utils.showToast('Error al cargar desglose: ' + e.message, 'error');
@@ -176,8 +191,14 @@ function recalcNeto() {
 async function generarNomina() {
   const usuarioId = document.getElementById('genEmpleado').value;
   const fecha = document.getElementById('genFecha').value;
+  const fechaInicio = document.getElementById('genFechaInicio').value;
+  const fechaFin = document.getElementById('genFechaFin').value;
   if (!usuarioId) {
     Utils.showToast('Selecciona un empleado', 'warning');
+    return;
+  }
+  if (!fechaInicio || !fechaFin || fechaInicio > fechaFin) {
+    Utils.showToast('Indica un periodo de nómina válido', 'warning');
     return;
   }
   const comisionIds = Array.from(document.querySelectorAll('.gen-comision:checked')).map(cb => parseInt(cb.value));
@@ -191,6 +212,8 @@ async function generarNomina() {
   try {
     const generated = await API.post('/nomina', {
       fecha_nomina: fecha,
+      fechaInicio,
+      fechaFin,
       usuarioId: parseInt(usuarioId),
       comisionIds: comisionIds,
       deduccionIds: deduccionIds,
@@ -215,7 +238,7 @@ async function generarNomina() {
 async function loadNominas() {
   const tbody = document.getElementById('tableNominasBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>Cargando...</p></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>Cargando...</p></div></td></tr>';
   try {
     const q = document.getElementById('searchNomina')?.value?.trim() || '';
     let params = '?page=' + currentPageNom + '&size=' + PAGE_SIZE + '&sort=id,desc';
@@ -229,7 +252,7 @@ async function loadNominas() {
     const resp = await API.get('/nomina' + params);
     renderNominas(resp);
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
   }
 }
 
@@ -241,7 +264,7 @@ function renderNominas(data) {
   totalElementsNom = data.totalElements || 0;
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>No hay n&oacute;minas</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>No hay n&oacute;minas</p></div></td></tr>';
     renderPaginacionNom();
     return;
   }
@@ -250,7 +273,8 @@ function renderNominas(data) {
     const acciones = '<button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button>';
     return '<tr>' +
       '<td>' + item.id + '</td>' +
-      '<td>' + Utils.formatDate(item.fecha_nomina) + '</td>' +
+       '<td>' + Utils.formatDate(item.fecha_nomina) + '</td>' +
+       '<td>' + Utils.formatDate(item.fechaInicio) + ' - ' + Utils.formatDate(item.fechaFin) + '</td>' +
       '<td>' + Utils.esc(item.usuarioNombre || item.usuarioId || '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.sueldoSemanal) + '</td>' +
       '<td>' + Utils.formatCurrency(item.totalComisiones) + '</td>' +
@@ -300,6 +324,7 @@ async function verNomina(item) {
   Utils.showDialog('N&oacute;mina #' + item.id,
     '<div class="row g-2">' +
       '<div class="col-6"><small class="text-muted">Fecha</small><div><strong>' + Utils.formatDate(item.fecha_nomina) + '</strong></div></div>' +
+      '<div class="col-12"><small class="text-muted">Periodo</small><div><strong>' + Utils.formatDate(item.fechaInicio) + ' al ' + Utils.formatDate(item.fechaFin) + '</strong></div></div>' +
       '<div class="col-6"><small class="text-muted">Usuario</small><div><strong>' + Utils.esc(item.usuarioNombre || '-') + '</strong></div></div>' +
        '<div class="col-6"><small class="text-muted">Sueldo semanal</small><div>' + Utils.formatCurrency(item.sueldoSemanal) + '</div></div>' +
       '<div class="col-6"><small class="text-muted">Comisiones</small><div style="color:var(--success)">+' + Utils.formatCurrency(item.totalComisiones).replace('$', '') + '</div></div>' +

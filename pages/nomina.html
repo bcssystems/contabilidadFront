@@ -30,9 +30,17 @@
             <label class="form-label">Empleado <span class="text-danger">*</span></label>
             <select class="form-select" id="genEmpleado"></select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <label class="form-label">Inicio de nómina</label>
+            <input type="date" class="form-control" id="genFechaInicio" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Fin de nómina</label>
+            <input type="date" class="form-control" id="genFechaFin" required>
+          </div>
+          <div class="col-md-3">
             <label class="form-label">Fecha de pago</label>
-            <input type="date" class="form-control" id="genFecha">
+            <input type="date" class="form-control" id="genFecha" required>
           </div>
           <div class="col-md-3 d-grid">
             <button class="btn btn-primary ripple" id="btnCargarDesglose">
@@ -113,7 +121,8 @@
                 <th>Empleado</th>
                 <th>Concepto</th>
                 <th>Monto</th>
-                <th>Fecha</th>
+                <th>Fecha de pago</th>
+                <th>Periodo</th>
                 <th>Corte</th>
                 <th>Estado</th>
                 <th style="width:120px"></th>
@@ -169,7 +178,7 @@
               </tr>
             </thead>
             <tbody id="tableNominasBody">
-              <tr><td colspan="9"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>Cargando...</p></div></td></tr>
+              <tr><td colspan="10"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><p>Cargando...</p></div></td></tr>
             </tbody>
           </table>
         </div>

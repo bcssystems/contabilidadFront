@@ -123,46 +123,95 @@ const Dashboard = {
     const modal = document.getElementById('specialUserMessageModal');
     if (!modal || typeof bootstrap === 'undefined') return;
 
-    const range = document.getElementById('specialLoveRange');
-    const value = document.getElementById('specialLoveValue');
-    const message = document.getElementById('specialLoveMessage');
     const questionView = document.getElementById('specialQuestionView');
     const finalView = document.getElementById('specialFinalView');
-    const continueButton = document.getElementById('specialLoveContinue');
+    const question = document.getElementById('specialQuizQuestion');
+    const options = document.getElementById('specialQuizOptions');
+    const progress = document.getElementById('specialQuizProgress');
+    const nextButton = document.getElementById('specialQuizNext');
     const title = document.getElementById('specialUserMessageTitle');
-    if (!range || !value || !message || !questionView || !finalView || !continueButton || !title) return;
+    if (!questionView || !finalView || !question || !options || !progress || !nextButton || !title) return;
 
-    const updateMessage = () => {
-      const selected = Number(range.value);
-      value.textContent = String(selected);
-      if (selected <= 100) message.textContent = 'Poquito, pero cuenta ❤️';
-      else if (selected <= 500) message.textContent = 'Awww, eso ya es bastante ❤️';
-      else if (selected < 1000) message.textContent = 'Me quieres muchísimo ❤️';
-      else message.textContent = 'Sabía que me querías al máximo ❤️';
+    const quiz = [
+      {
+        text: '¿Cuál de estas cosas crees que me gusta más para pasar un día tranquilo?',
+        answers: ['Una tarde de películas', 'Salir por un café', 'Una fiesta con mucha gente'],
+      },
+      {
+        text: '¿Cuál de estas salidas contigo recuerdas con más cariño?',
+        answers: ['Una salida improvisada', 'Una comida o cena juntos', 'Una caminata y una buena plática'],
+      },
+      {
+        text: '¿Cuál de estas opciones describe mejor tu personalidad?',
+        answers: ['Cariñosa y divertida', 'Seria pero muy especial', 'Aventurera y espontánea'],
+      },
+    ];
+    let currentQuestion = 0;
+    const answers = [];
+
+    const renderQuestion = () => {
+      const current = quiz[currentQuestion];
+      question.textContent = current.text;
+      progress.textContent = 'Pregunta ' + (currentQuestion + 1) + ' de ' + quiz.length;
+      options.innerHTML = current.answers.map((answer, index) =>
+        '<label class="d-block border rounded p-2 mb-2" style="cursor:pointer">' +
+          '<input type="radio" name="specialQuizAnswer" value="' + index + '" class="me-2">' + answer +
+        '</label>'
+      ).join('');
+      nextButton.textContent = currentQuestion === quiz.length - 1 ? 'Terminar quiz' : 'Siguiente';
+    };
+
+    const downloadAnswers = () => {
+      const content = [
+        'Respuestas del quiz especial',
+        'Usuario: ' + normalizedUsername,
+        'Fecha: ' + new Date().toLocaleString('es-MX'),
+        '',
+        ...answers.map((answer, index) => 'Pregunta ' + (index + 1) + ': ' + quiz[index].text + '\nRespuesta ' + (index + 1) + ': ' + answer),
+      ].join('\n\n');
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'respuestas-quiz-' + normalizedUsername + '.txt';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     };
 
     if (!modal.dataset.specialMessageBound) {
       modal.dataset.specialMessageBound = 'true';
-      range.addEventListener('input', updateMessage);
-      continueButton.addEventListener('click', () => {
+      nextButton.addEventListener('click', () => {
+        const selected = options.querySelector('input[name="specialQuizAnswer"]:checked');
+        if (!selected) return;
+        answers.push(quiz[currentQuestion].answers[Number(selected.value)]);
+        if (currentQuestion < quiz.length - 1) {
+          currentQuestion += 1;
+          renderQuestion();
+          return;
+        }
+        downloadAnswers();
         questionView.classList.add('d-none');
         finalView.classList.remove('d-none');
-        title.textContent = 'Awww';
+        title.textContent = 'Mensaje para ti';
       });
       modal.addEventListener('hidden.bs.modal', () => {
-        range.value = '1';
+        currentQuestion = 0;
+        answers.length = 0;
         questionView.classList.remove('d-none');
         finalView.classList.add('d-none');
-        title.textContent = '¿Cuánto me quieres?';
-        updateMessage();
+        title.textContent = 'Quiz especial';
+        renderQuestion();
       });
     }
 
-    range.value = '1';
+    currentQuestion = 0;
+    answers.length = 0;
     questionView.classList.remove('d-none');
     finalView.classList.add('d-none');
-    title.textContent = '¿Cuánto me quieres?';
-    updateMessage();
+    title.textContent = 'Quiz especial';
+    renderQuestion();
     bootstrap.Modal.getOrCreateInstance(modal).show();
   },
 

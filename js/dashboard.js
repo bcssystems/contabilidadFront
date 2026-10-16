@@ -138,7 +138,7 @@ const Dashboard = {
         answers: ['Una tarde de películas', 'Salir por un café', 'Una fiesta con mucha gente'],
       },
       {
-        text: '¿Cuál de estas salidas contigo recuerdas con más cariño?',
+        text: '¿Cuál de estas salidas te gustaría hacer conmigo?',
         answers: ['Una salida improvisada', 'Una comida o cena juntos', 'Una caminata y una buena plática'],
       },
       {
@@ -161,28 +161,9 @@ const Dashboard = {
       nextButton.textContent = currentQuestion === quiz.length - 1 ? 'Terminar quiz' : 'Siguiente';
     };
 
-    const downloadAnswers = () => {
-      const content = [
-        'Respuestas del quiz especial',
-        'Usuario: ' + normalizedUsername,
-        'Fecha: ' + new Date().toLocaleString('es-MX'),
-        '',
-        ...answers.map((answer, index) => 'Pregunta ' + (index + 1) + ': ' + quiz[index].text + '\nRespuesta ' + (index + 1) + ': ' + answer),
-      ].join('\n\n');
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'respuestas-quiz-' + normalizedUsername + '.txt';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    };
-
     if (!modal.dataset.specialMessageBound) {
       modal.dataset.specialMessageBound = 'true';
-      nextButton.addEventListener('click', () => {
+      nextButton.addEventListener('click', async () => {
         const selected = options.querySelector('input[name="specialQuizAnswer"]:checked');
         if (!selected) return;
         answers.push(quiz[currentQuestion].answers[Number(selected.value)]);
@@ -191,7 +172,21 @@ const Dashboard = {
           renderQuestion();
           return;
         }
-        downloadAnswers();
+        nextButton.disabled = true;
+        try {
+          await API.post('/quiz/respuestas', {
+            respuestas: answers.map((answer, index) => ({
+              pregunta: quiz[index].text,
+              respuesta: answer,
+            })),
+          });
+        } catch (error) {
+          answers.pop();
+          nextButton.disabled = false;
+          if (typeof Utils !== 'undefined') Utils.showToast('No se pudieron guardar tus respuestas en el servidor: ' + error.message, 'error');
+          return;
+        }
+        nextButton.disabled = false;
         questionView.classList.add('d-none');
         finalView.classList.remove('d-none');
         title.textContent = 'Mensaje para ti';

@@ -134,16 +134,16 @@ const Dashboard = {
 
     const quiz = [
       {
-        text: '¿Cuál de estas cosas crees que me gusta más para pasar un día tranquilo?',
-        answers: ['Una tarde de películas', 'Salir por un café', 'Una fiesta con mucha gente'],
+        text: 'Si pudiéramos viajar mañana, ¿qué plan escogerías hacer conmigo?',
+        answers: ['Escaparnos a la playa', 'Conocer un pueblito nuevo', 'Recorrer una ciudad de noche'],
       },
       {
-        text: '¿Cuál de estas salidas te gustaría hacer conmigo?',
-        answers: ['Una salida improvisada', 'Una comida o cena juntos', 'Una caminata y una buena plática'],
+        text: '¿Qué crees que haría inolvidable una salida juntos?',
+        answers: ['Reírnos sin parar', 'Tener una plática profunda', 'Vivir una aventura inesperada'],
       },
       {
-        text: '¿Cuál de estas opciones describe mejor tu personalidad?',
-        answers: ['Cariñosa y divertida', 'Seria pero muy especial', 'Aventurera y espontánea'],
+        text: '¿Qué opción describe mejor esa parte especial de tu personalidad?',
+        answers: ['Tu forma de hacer reír a los demás', 'Tu manera de cuidar a quienes quieres', 'Tu lado espontáneo y aventurero'],
       },
     ];
     let currentQuestion = 0;

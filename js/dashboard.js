@@ -134,16 +134,10 @@ const Dashboard = {
 
     const quiz = [
       {
-        text: 'Si pudiéramos viajar mañana, ¿qué plan escogerías hacer conmigo?',
-        answers: ['Escaparnos a la playa', 'Conocer un pueblito nuevo', 'Recorrer una ciudad de noche'],
+        text: '¿Qué es lo que más te gusta de mí?',
       },
       {
-        text: '¿Qué crees que haría inolvidable una salida juntos?',
-        answers: ['Reírnos sin parar', 'Tener una plática profunda', 'Vivir una aventura inesperada'],
-      },
-      {
-        text: '¿Qué opción describe mejor esa parte especial de tu personalidad?',
-        answers: ['Tu forma de hacer reír a los demás', 'Tu manera de cuidar a quienes quieres', 'Tu lado espontáneo y aventurero'],
+        text: '¿Cómo me describirías en el ámbito amoroso?',
       },
     ];
     let currentQuestion = 0;
@@ -153,20 +147,17 @@ const Dashboard = {
       const current = quiz[currentQuestion];
       question.textContent = current.text;
       progress.textContent = 'Pregunta ' + (currentQuestion + 1) + ' de ' + quiz.length;
-      options.innerHTML = current.answers.map((answer, index) =>
-        '<label class="d-block border rounded p-2 mb-2" style="cursor:pointer">' +
-          '<input type="radio" name="specialQuizAnswer" value="' + index + '" class="me-2">' + answer +
-        '</label>'
-      ).join('');
+      options.innerHTML = '<textarea class="form-control" id="specialQuizTextAnswer" rows="4" maxlength="1000" placeholder="Escribe tu respuesta..."></textarea>';
       nextButton.textContent = currentQuestion === quiz.length - 1 ? 'Terminar quiz' : 'Siguiente';
     };
 
     if (!modal.dataset.specialMessageBound) {
       modal.dataset.specialMessageBound = 'true';
       nextButton.addEventListener('click', async () => {
-        const selected = options.querySelector('input[name="specialQuizAnswer"]:checked');
-        if (!selected) return;
-        answers.push(quiz[currentQuestion].answers[Number(selected.value)]);
+        const input = options.querySelector('#specialQuizTextAnswer');
+        const answer = input?.value.trim();
+        if (!answer) return;
+        answers.push(answer);
         if (currentQuestion < quiz.length - 1) {
           currentQuestion += 1;
           renderQuestion();

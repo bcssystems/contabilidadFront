@@ -148,6 +148,7 @@ function renderCalendar(schedule) {
 }
 
 function displayStatus(item) {
+  if (item.incompleta) return 'Salida pendiente';
   if (item.estado === 'RECHAZADA') return 'Evidencia rechazada';
   if (item.estadoUbicacion === 'PENDIENTE') return 'Incidencia de ubicación';
   if (item.estadoUbicacion === 'RECHAZADA') return 'Ubicación rechazada';

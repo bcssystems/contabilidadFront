@@ -402,7 +402,7 @@ async function loadDeducciones() {
   tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>Cargando...</p></div></td></tr>';
   try {
     await API.generarDeduccionesPrestamos(new Date().toISOString().split('T')[0]);
-    await sincronizarDeduccionesAsistencia();
+    await API.post('/nomina/asistencia/reconciliar', {});
     const q = document.getElementById('searchDeduccion')?.value?.trim() || '';
     let params = '?page=' + currentPageDed + '&size=' + PAGE_SIZE + '&sort=id,desc';
     if (q) params += '&search=' + encodeURIComponent(q);
@@ -420,22 +420,6 @@ async function loadDeducciones() {
     renderDeducciones(resp);
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
-  }
-}
-
-async function sincronizarDeduccionesAsistencia() {
-  try {
-    const today = new Date();
-    const inicio = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-01';
-    const fin = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-    const response = await API.get('/usuarios');
-    const users = Array.isArray(response) ? response : (response.content || []);
-    await Promise.all(users.map(user => {
-      const id = user.idUsuario ?? user.id;
-      return id ? API.generarDeduccionesAsistencia(id, inicio, fin).catch(() => null) : null;
-    }));
-  } catch (_) {
-    // La consulta de deducciones sigue funcionando aunque algún usuario no tenga horario.
   }
 }
 

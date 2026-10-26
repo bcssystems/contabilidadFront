@@ -139,6 +139,16 @@ const API = {
     return response.blob();
   },
 
+  async downloadPost(endpoint, body) {
+    const response = await fetch(this.baseUrl + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + this.getToken() },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error('No se pudo descargar el archivo');
+    return response.blob();
+  },
+
   get(endpoint) {
     return this.request(endpoint);
   },

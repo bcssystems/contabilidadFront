@@ -7,6 +7,8 @@ let totalElementsDed = 0;
 let editingDeduccionId = null;
 let desgloseData = null;
 let currentPageComNom = 0;
+let loteNominas = [];
+let revisionLoteActual = null;
 const PAGE_SIZE = 20;
 
 export function init() {
@@ -15,16 +17,21 @@ export function init() {
   editingDeduccionId = null;
   desgloseData = null;
   const today = new Date();
-  const todayValue = today.toISOString().split('T')[0];
-  const start = new Date(today);
-  start.setDate(start.getDate() - 6);
-  const startValue = start.toISOString().split('T')[0];
   const dateInput = document.getElementById('genFecha');
   const startInput = document.getElementById('genFechaInicio');
   const endInput = document.getElementById('genFechaFin');
-  if (dateInput) dateInput.value = todayValue;
-  if (startInput) startInput.value = startValue;
-  if (endInput) endInput.value = todayValue;
+  const payment = new Date(today);
+  const untilFriday = (5 - payment.getDay() + 7) % 7;
+  payment.setDate(payment.getDate() + untilFriday);
+  const periodEnd = new Date(payment); periodEnd.setDate(periodEnd.getDate() - 1);
+  const periodStart = new Date(payment); periodStart.setDate(periodStart.getDate() - 7);
+  const dateValue = value => value.getFullYear() + '-' + String(value.getMonth() + 1).padStart(2, '0') + '-' + String(value.getDate()).padStart(2, '0');
+  if (dateInput) dateInput.value = dateValue(payment);
+  if (startInput) startInput.value = dateValue(periodStart);
+  if (endInput) endInput.value = dateValue(periodEnd);
+  if (document.getElementById('loteFechaInicio')) document.getElementById('loteFechaInicio').value = dateValue(periodStart);
+  if (document.getElementById('loteFechaFin')) document.getElementById('loteFechaFin').value = dateValue(periodEnd);
+  if (document.getElementById('loteFechaPago')) document.getElementById('loteFechaPago').value = dateValue(payment);
   loadNominas();
   loadDeducciones();
   loadComisionesNomina();
@@ -36,6 +43,10 @@ export function init() {
 
 function bindEvents() {
   document.getElementById('btnCargarDesglose')?.addEventListener('click', cargarDesglose);
+  document.getElementById('btnPrepararLote')?.addEventListener('click', prepararLote);
+  document.getElementById('btnGenerarLote')?.addEventListener('click', generarLote);
+  document.getElementById('btnDescargarLote')?.addEventListener('click', descargarLote);
+  document.getElementById('btnConfirmarRevisionLote')?.addEventListener('click', confirmarRevisionLote);
   document.getElementById('btnGenerarNomina')?.addEventListener('click', generarNomina);
   document.getElementById('btnNuevaDeduccion')?.addEventListener('click', () => openDeduccionModal(null));
   document.getElementById('btnGuardarDeduccion')?.addEventListener('click', saveDeduccion);
@@ -51,9 +62,80 @@ function bindEvents() {
   document.getElementById('deduccionModal')?.addEventListener('hidden.bs.modal', () => { editingDeduccionId = null; });
   document.getElementById('btnNuevaComisionNomina')?.addEventListener('click', () => openComisionNomina(null));
   document.getElementById('btnGuardarComisionNomina')?.addEventListener('click', saveComisionNomina);
+  document.getElementById('btnAgregarFilaComision')?.addEventListener('click', () => agregarFilaComision());
   document.getElementById('searchComisionNomina')?.addEventListener('input', Utils.debounce(() => { currentPageComNom = 0; loadComisionesNomina(); }, 300));
   document.getElementById('filterEstadoComisionNomina')?.addEventListener('change', () => { currentPageComNom = 0; loadComisionesNomina(); });
   ['filterComisionNominaDesde', 'filterComisionNominaHasta'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { currentPageComNom = 0; loadComisionesNomina(); }));
+}
+
+async function prepararLote() {
+  const inicio = document.getElementById('loteFechaInicio')?.value;
+  const fin = document.getElementById('loteFechaFin')?.value;
+  const pago = document.getElementById('loteFechaPago')?.value;
+  if (!inicio || !fin || inicio > fin) { Utils.showToast('Indica un periodo de corte válido', 'warning'); return; }
+  const button = document.getElementById('btnPrepararLote');
+  if (button) button.disabled = true;
+  try {
+    const response = await API.post('/nomina/preparar-lote', { fechaInicio: inicio, fechaFin: fin, fechaPago: pago });
+    loteNominas = response.nominas || [];
+    renderLote(response);
+    Utils.showToast('Lote preparado. Revisa cada empleado antes de generar.', 'success');
+  } catch (e) { Utils.showToast('Error al preparar lote: ' + e.message, 'error'); }
+  finally { if (button) button.disabled = false; }
+}
+
+function renderLote(data) {
+  const section = document.getElementById('revisionLoteSection');
+  const body = document.getElementById('revisionLoteBody');
+  if (!section || !body) return;
+  section.classList.remove('d-none');
+  body.innerHTML = loteNominas.map(item => '<tr><td>' + Utils.esc(item.usuarioNombre || item.usuarioId || '-') + '</td><td>' + Utils.formatCurrency(item.sueldoBase) + '</td><td>' + Utils.formatCurrency(item.totalComisiones) + '</td><td>' + Utils.formatCurrency(item.totalDeducciones) + '</td><td><strong>' + Utils.formatCurrency(item.sueldo) + '</strong></td><td>' + estadoBadge(item.estado) + '</td><td><button class="btn btn-sm btn-outline-primary revisar-lote" data-id="' + item.id + '" data-user="' + item.usuarioId + '">' + (item.estado === 'REVISADA' ? 'Revisada' : 'Revisar') + '</button></td></tr>').join('');
+  document.getElementById('loteTotalBase').textContent = Utils.formatCurrency(data.totalSueldoBase);
+  document.getElementById('loteTotalComisiones').textContent = Utils.formatCurrency(data.totalComisiones);
+  document.getElementById('loteTotalDeducciones').textContent = Utils.formatCurrency(data.totalDeducciones);
+  document.getElementById('loteTotalNeto').textContent = Utils.formatCurrency(data.totalNeto);
+  body.querySelectorAll('.revisar-lote').forEach(button => button.addEventListener('click', () => revisarLote(parseInt(button.dataset.id), parseInt(button.dataset.user))));
+}
+
+async function revisarLote(id, usuarioId) {
+  const inicio = document.getElementById('loteFechaInicio').value;
+  const fin = document.getElementById('loteFechaFin').value;
+  try {
+    const desglose = await API.get('/nomina/desglose/' + usuarioId + '?inicio=' + encodeURIComponent(inicio) + '&fin=' + encodeURIComponent(fin));
+    revisionLoteActual = { id, desglose };
+    const body = document.getElementById('revisionLoteModalBody');
+    if (body) body.innerHTML = '<h6>Comisiones</h6>' + (desglose.comisiones || []).map(item => '<label class="d-flex justify-content-between border-bottom py-2"><span><input type="checkbox" class="revision-comision me-2" value="' + item.id + '" checked> ' + Utils.esc(item.fechaGeneracion || '') + ' - ' + Utils.esc(item.concepto || 'Comisión') + '</span><strong>' + Utils.formatCurrency(item.montoComision) + '</strong></label>').join('') + '<h6 class="mt-3">Deducciones</h6>' + (desglose.deducciones || []).map(item => '<label class="d-flex justify-content-between border-bottom py-2"><span><input type="checkbox" class="revision-deduccion me-2" value="' + item.id + '" checked> ' + Utils.esc(item.fecha || '') + ' - ' + Utils.esc(item.concepto || 'Deducción') + '</span><strong>' + Utils.formatCurrency(item.monto) + '</strong></label>').join('');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionLoteModal')).show();
+  } catch (e) { Utils.showToast('No se pudo revisar la nómina: ' + e.message, 'error'); }
+}
+
+async function confirmarRevisionLote() {
+  if (!revisionLoteActual) return;
+  try {
+    await API.post('/nomina/' + revisionLoteActual.id + '/revisar', { comisionIds: Array.from(document.querySelectorAll('.revision-comision:checked')).map(item => parseInt(item.value)), deduccionIds: Array.from(document.querySelectorAll('.revision-deduccion:checked')).map(item => parseInt(item.value)) });
+    bootstrap.Modal.getInstance(document.getElementById('revisionLoteModal'))?.hide();
+    revisionLoteActual = null;
+    Utils.showToast('Nómina marcada como revisada', 'success');
+    await prepararLote();
+  } catch (e) { Utils.showToast('No se pudo guardar la revisión: ' + e.message, 'error'); }
+}
+
+async function generarLote() {
+  const ids = loteNominas.filter(item => item.estado === 'REVISADA').map(item => item.id);
+  if (!ids.length) { Utils.showToast('Primero revisa al menos una nómina', 'warning'); return; }
+  try { const result = await API.post('/nomina/generar-lote', ids); Utils.showToast('Nóminas generadas correctamente', 'success'); renderLote(result); loadNominas(); }
+  catch (e) { Utils.showToast('No se pudo generar el lote: ' + e.message, 'error'); }
+}
+
+async function descargarLote() {
+  const ids = loteNominas.filter(item => item.estado === 'REVISADA' || item.estado === 'GENERADA').map(item => item.id);
+  if (!ids.length) { Utils.showToast('No hay nóminas para imprimir', 'warning'); return; }
+  try {
+    const blob = await API.downloadPost('/nomina/lote/pdf', ids);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = 'nominas-lote.pdf'; link.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { Utils.showToast('No se pudo generar el lote PDF: ' + e.message, 'error'); }
 }
 
 /* ============ DESGLOSE / GENERAR ============ */
@@ -66,7 +148,7 @@ async function loadEmpleadosSelect(selectId, selectedId) {
     const resp = await API.get('/usuarios');
     const list = Array.isArray(resp) ? resp : (resp.content || []);
     select.innerHTML = '<option value="" disabled ' + (!selectedId ? 'selected' : '') + '>Selecciona un empleado</option>';
-    list.forEach(e => {
+     list.filter(e => e.activo !== false).forEach(e => {
       const name = [e.nombre, e.primerApellido, e.segundoApellido].filter(Boolean).join(' ');
       const opt = document.createElement('option');
        opt.value = e.idUsuario ?? e.id;
@@ -600,26 +682,41 @@ async function loadComisionesNomina() {
 
 async function openComisionNomina(id) {
   document.getElementById('comisionNominaId').value = id || '';
-  document.getElementById('comisionNominaConcepto').value = '';
-  document.getElementById('comisionNominaTipo').value = 'VENTA';
-  document.getElementById('comisionNominaMonto').value = '';
+  document.getElementById('comisionNominaFilas').innerHTML = '';
   await loadEmpleadosSelect('comisionNominaEmpleado');
   if (id) {
     const c = await API.get('/comision/' + id);
     document.getElementById('comisionNominaEmpleado').value = c.usuarioId || '';
-    document.getElementById('comisionNominaConcepto').value = c.concepto || '';
-    document.getElementById('comisionNominaTipo').value = c.tipoComision || 'VENTA';
-    document.getElementById('comisionNominaMonto').value = c.montoComision || '';
+    agregarFilaComision(c);
+  } else {
+    agregarFilaComision();
   }
   document.getElementById('comisionNominaModalTitle').textContent = id ? 'Editar Comisión' : 'Nueva Comisión';
   new bootstrap.Modal(document.getElementById('comisionNominaModal')).show();
 }
 
+function agregarFilaComision(value = {}) {
+  const container = document.getElementById('comisionNominaFilas');
+  if (!container) return;
+  const today = new Date().toISOString().split('T')[0];
+  const row = document.createElement('div');
+  row.className = 'row g-2 align-items-end mb-2 comision-nomina-row';
+  row.innerHTML = '<div class="col-md-3"><label class="small">Concepto</label><input class="form-control comision-concepto" maxlength="200" value="' + Utils.esc(value.concepto || '') + '"></div>' +
+    '<div class="col-md-2"><label class="small">Tipo</label><select class="form-select comision-tipo"><option value="VENTA" ' + (value.tipoComision === 'VENTA' || !value.tipoComision ? 'selected' : '') + '>Venta</option><option value="COBRANZA" ' + (value.tipoComision === 'COBRANZA' ? 'selected' : '') + '>Cobranza</option></select></div>' +
+    '<div class="col-md-3"><label class="small">Fecha</label><input type="date" class="form-control comision-fecha" value="' + (value.fechaGeneracion || today) + '"></div>' +
+    '<div class="col-md-3"><label class="small">Monto</label><input type="number" class="form-control comision-monto" min="0.01" step="0.01" value="' + (value.montoComision || '') + '"></div>' +
+    '<div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm quitar-comision" title="Quitar"><i class="fas fa-trash"></i></button></div>';
+  row.querySelector('.quitar-comision').addEventListener('click', () => { if (container.children.length > 1) row.remove(); });
+  container.appendChild(row);
+}
+
 async function saveComisionNomina() {
   const id = document.getElementById('comisionNominaId').value;
-  const data = { usuarioId: Number(document.getElementById('comisionNominaEmpleado').value), concepto: document.getElementById('comisionNominaConcepto').value.trim(), tipoComision: document.getElementById('comisionNominaTipo').value, monto: Number(document.getElementById('comisionNominaMonto').value) };
-  if (!data.usuarioId || data.monto <= 0 || !data.concepto) { Utils.showToast('Empleado, concepto y monto son obligatorios', 'warning'); return; }
-  try { if (id) await API.put('/comision/' + id, data); else await API.post('/comision', data); bootstrap.Modal.getInstance(document.getElementById('comisionNominaModal'))?.hide(); loadComisionesNomina(); Utils.showToast('Comisión guardada', 'success'); } catch (e) { Utils.showToast('Error: ' + e.message, 'error'); }
+  const usuarioId = Number(document.getElementById('comisionNominaEmpleado').value);
+  const rows = [...document.querySelectorAll('.comision-nomina-row')];
+  const comisiones = rows.map(row => ({ usuarioId, concepto: row.querySelector('.comision-concepto').value.trim(), tipoComision: row.querySelector('.comision-tipo').value, monto: Number(row.querySelector('.comision-monto').value), fechaComision: row.querySelector('.comision-fecha').value }));
+  if (!usuarioId || comisiones.some(item => !item.concepto || item.monto <= 0 || !item.fechaComision)) { Utils.showToast('Empleado, concepto, fecha y monto son obligatorios', 'warning'); return; }
+  try { if (id) await API.put('/comision/' + id, comisiones[0]); else await API.post('/comision/lote', { comisiones }); bootstrap.Modal.getInstance(document.getElementById('comisionNominaModal'))?.hide(); loadComisionesNomina(); Utils.showToast(comisiones.length > 1 ? 'Comisiones guardadas' : 'Comisión guardada', 'success'); } catch (e) { Utils.showToast('Error: ' + e.message, 'error'); }
 }
 
 async function deleteComisionNomina(id) {
@@ -631,6 +728,8 @@ async function deleteComisionNomina(id) {
 
 function estadoBadge(estado) {
   const map = {
+    'PENDIENTE_REVISION': 'badge-warning',
+    'REVISADA': 'badge-active',
     'GENERADA': 'badge-active',
     'PAGADA': 'badge-active',
     'APLICADA': 'badge-active',

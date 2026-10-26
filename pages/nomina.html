@@ -24,6 +24,22 @@
   <div class="tab-content">
     <!-- ===== TAB: GENERAR ===== -->
     <div class="tab-pane fade show active" id="tabGenerar" role="tabpanel">
+      <div class="panel-card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div><h5 class="mb-1">Revisi&oacute;n de n&oacute;mina por lote</h5><small class="text-muted">Prepara a todos los empleados, revisa sus incidencias y genera el lote al final.</small></div>
+          <button class="btn btn-primary" id="btnPrepararLote"><i class="fas fa-users-cog me-1"></i>Preparar lote</button>
+        </div>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4"><label class="form-label">Inicio del corte</label><input type="date" class="form-control" id="loteFechaInicio"></div>
+          <div class="col-md-4"><label class="form-label">Fin del corte</label><input type="date" class="form-control" id="loteFechaFin"></div>
+          <div class="col-md-4"><label class="form-label">Fecha de pago</label><input type="date" class="form-control" id="loteFechaPago"></div>
+        </div>
+        <div id="revisionLoteSection" class="mt-4 d-none">
+          <div class="table-responsive"><table class="table table-sm table-custom mb-3"><thead><tr><th>Empleado</th><th>Base</th><th>Comisiones</th><th>Deducciones</th><th>Neto</th><th>Estado</th><th></th></tr></thead><tbody id="revisionLoteBody"></tbody></table></div>
+          <div class="row g-2 text-end border-top pt-3"><div class="col-md-3"><small class="text-muted d-block">Base total</small><strong id="loteTotalBase">$0.00</strong></div><div class="col-md-3"><small class="text-muted d-block">Comisiones</small><strong id="loteTotalComisiones">$0.00</strong></div><div class="col-md-3"><small class="text-muted d-block">Deducciones</small><strong id="loteTotalDeducciones">$0.00</strong></div><div class="col-md-3"><small class="text-muted d-block">Neto total</small><strong id="loteTotalNeto">$0.00</strong></div></div>
+          <div class="text-end mt-3"><button class="btn btn-outline-primary me-2" id="btnDescargarLote"><i class="fas fa-print me-1"></i>Imprimir lote</button><button class="btn btn-success" id="btnGenerarLote"><i class="fas fa-file-invoice-dollar me-1"></i>Generar todas las revisadas</button></div>
+        </div>
+      </div>
       <div class="panel-card p-3">
         <div class="row g-3 align-items-end">
           <div class="col-md-5">
@@ -156,7 +172,7 @@
           <span class="input-group-text"><i class="fas fa-search"></i></span>
           <input type="text" class="form-control" id="searchNomina" placeholder="Buscar n&oacute;mina...">
         </div>
-        <select class="form-select" id="filterEstadoNomina"><option value="">Todos los estados</option><option value="GENERADA">Generada</option><option value="CANCELADA">Cancelada</option></select>
+        <select class="form-select" id="filterEstadoNomina"><option value="">Todos los estados</option><option value="PENDIENTE_REVISION">Pendiente de revisi&oacute;n</option><option value="REVISADA">Revisada</option><option value="GENERADA">Generada</option><option value="CANCELADA">Cancelada</option></select>
         <div class="filter-field"><label for="filterNominaDesde">Desde</label><input type="date" class="form-control" id="filterNominaDesde"></div>
         <div class="filter-field"><label for="filterNominaHasta">Hasta</label><input type="date" class="form-control" id="filterNominaHasta"></div>
       </div>
@@ -167,6 +183,7 @@
               <tr>
                 <th>ID</th>
                 <th>Fecha</th>
+                <th>Periodo</th>
                 <th>Empleado</th>
                  <th>Sueldo Semanal</th>
                 <th>Comisiones</th>
@@ -192,14 +209,15 @@
     <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="comisionNominaModalTitle">Nueva Comisión</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body"><form id="formComisionNomina"><input type="hidden" id="comisionNominaId">
       <div class="mb-3"><label class="form-label">Empleado *</label><select class="form-select" id="comisionNominaEmpleado"></select></div>
-      <div class="mb-3"><label class="form-label">Concepto</label><input class="form-control" id="comisionNominaConcepto" maxlength="200"></div>
-      <div class="row g-3"><div class="col-md-6"><label class="form-label">Tipo *</label><select class="form-select" id="comisionNominaTipo"><option value="VENTA">Venta</option><option value="COBRANZA">Cobranza</option></select></div>
-      <div class="col-md-6"><label class="form-label">Monto *</label><input type="number" class="form-control" id="comisionNominaMonto" step="0.01" min="0.01"></div></div>
+       <div class="d-flex justify-content-between align-items-center mb-2"><label class="form-label mb-0">Comisiones</label><button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarFilaComision"><i class="fas fa-plus me-1"></i>Agregar otra</button></div>
+       <div id="comisionNominaFilas"></div>
     </form></div><div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="btnGuardarComisionNomina">Guardar</button></div>
   </div></div>
 </div>
 
 <div class="modal fade" id="nominaImpresionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="modal-title">N&oacute;mina generada</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p id="nominaImpresionTexto" class="mb-0"></p></div><div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button><button type="button" class="btn btn-primary" id="btnImprimirNomina"><i class="fas fa-print me-1"></i>Imprimir</button></div></div></div></div>
+
+<div class="modal fade" id="revisionLoteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="modal-title">Revisar conceptos de n&oacute;mina</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="revisionLoteModalBody"></div><div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="btnConfirmarRevisionLote">Marcar como revisada</button></div></div></div></div>
 
 <!-- ===== MODAL: DEDUCCION ===== -->
 <div class="modal fade" id="deduccionModal" tabindex="-1">

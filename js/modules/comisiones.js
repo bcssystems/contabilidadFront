@@ -109,7 +109,7 @@ async function loadEmpleadosSelect(selectedId, selectId = 'comisionEmpleado') {
     const resp = await API.get('/usuarios');
     const list = Array.isArray(resp) ? resp : (resp.content || []);
     select.innerHTML = '<option value="" disabled ' + (!selectedId ? 'selected' : '') + '>Selecciona un empleado</option>';
-    list.forEach(e => {
+    list.filter(e => e.activo !== false).forEach(e => {
       const name = [e.nombre, e.primerApellido, e.segundoApellido].filter(Boolean).join(' ');
       const opt = document.createElement('option');
        opt.value = e.idUsuario ?? e.id;

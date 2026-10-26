@@ -18,6 +18,8 @@ function bindEvents() {
   document.getElementById('btnGuardarEmpleado')?.addEventListener('click', saveEmpleado);
   document.getElementById('searchEmpleado')?.addEventListener('input', Utils.debounce(function() { currentPage = 0; loadEmpleados(); }, 300));
   document.getElementById('filterPuesto')?.addEventListener('change', function() { currentPage = 0; loadEmpleados(); });
+  document.getElementById('filterEstadoEmpleado')?.addEventListener('change', function() { currentPage = 0; loadEmpleados(); });
+  document.getElementById('btnVerInactivos')?.addEventListener('click', function() { const filter = document.getElementById('filterEstadoEmpleado'); if (filter) filter.value = filter.value === 'INACTIVOS' ? 'ACTIVOS' : 'INACTIVOS'; this.innerHTML = filter?.value === 'INACTIVOS' ? '<i class="fas fa-user-check me-1"></i> Ver activos' : '<i class="fas fa-user-slash me-1"></i> Ver inactivos'; currentPage = 0; loadEmpleados(); });
   document.getElementById('empleadoTipoPersona')?.addEventListener('change', updateEmploymentFields);
   document.getElementById('empleadoSueldoSemanal')?.addEventListener('input', calculateHourlyRate);
   document.getElementById('empleadoHorarioDias')?.addEventListener('input', calculateHourlyRate);
@@ -33,9 +35,11 @@ async function loadEmpleados() {
     const all = Array.isArray(resp) ? resp : (resp.content || []);
     const q = (document.getElementById('searchEmpleado')?.value || '').trim().toLowerCase();
     const p = document.getElementById('filterPuesto')?.value || '';
+    const state = document.getElementById('filterEstadoEmpleado')?.value || 'ACTIVOS';
     const filtered = all.filter(item => {
       const name = [item.nombre, item.primerApellido, item.segundoApellido, item.username].filter(Boolean).join(' ').toLowerCase();
-      return (!q || name.includes(q)) && (!p || item.position === p);
+      return (!q || name.includes(q)) && (!p || item.position === p)
+        && (state === 'TODOS' || (state === 'INACTIVOS' ? item.activo === false : item.activo !== false));
     });
     totalElements = filtered.length;
     totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));

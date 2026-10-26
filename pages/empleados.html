@@ -7,6 +7,9 @@
     <button class="btn btn-primary ripple" id="btnNuevoEmpleado">
       <i class="fas fa-plus me-1"></i> Nuevo Usuario
     </button>
+    <button class="btn btn-outline-secondary ripple ms-2" id="btnVerInactivos">
+      <i class="fas fa-user-slash me-1"></i> Ver inactivos
+    </button>
   </div>
 
   <div class="filter-bar filter-bar-2cols">
@@ -14,12 +17,13 @@
       <span class="input-group-text"><i class="fas fa-search"></i></span>
       <input type="text" class="form-control" id="searchEmpleado" placeholder="Buscar usuario...">
     </div>
-    <select class="form-select" id="filterPuesto">
+     <select class="form-select" id="filterPuesto">
       <option value="">Todos los puestos</option>
       <option value="VENDEDOR">Vendedor</option>
       <option value="TECNICO">T&eacute;cnico</option>
       <option value="COBRANZA">Cobranza</option>
-    </select>
+     </select>
+     <select class="form-select" id="filterEstadoEmpleado"><option value="ACTIVOS">Solo activos</option><option value="TODOS">Todos</option><option value="INACTIVOS">Solo inactivos</option></select>
   </div>
 
   <div class="panel-card overflow-hidden">

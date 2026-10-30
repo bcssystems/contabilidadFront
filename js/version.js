@@ -1,4 +1,4 @@
-var PAYLOAD_VERSION = '1.1.0';
+var PAYLOAD_VERSION = '1.1.2';
 
 function withAssetVersion(url) {
   if (!url || /^https?:\/\//i.test(url) || url.indexOf('data:') === 0) return url;

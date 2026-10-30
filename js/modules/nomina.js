@@ -8,7 +8,7 @@ let editingDeduccionId = null;
 let desgloseData = null;
 let currentPageComNom = 0;
 let loteNominas = [];
-let revisionLoteActual = null;
+let loteDetalles = [];
 const PAGE_SIZE = 20;
 
 export function init() {
@@ -47,6 +47,7 @@ function bindEvents() {
   document.getElementById('btnGenerarLote')?.addEventListener('click', generarLote);
   document.getElementById('btnDescargarLote')?.addEventListener('click', descargarLote);
   document.getElementById('btnConfirmarRevisionLote')?.addEventListener('click', confirmarRevisionLote);
+  document.getElementById('btnGenerarNominasModal')?.addEventListener('click', generarLote);
   document.getElementById('btnGenerarNomina')?.addEventListener('click', generarNomina);
   document.getElementById('btnNuevaDeduccion')?.addEventListener('click', () => openDeduccionModal(null));
   document.getElementById('btnGuardarDeduccion')?.addEventListener('click', saveDeduccion);
@@ -79,9 +80,47 @@ async function prepararLote() {
     const response = await API.post('/nomina/preparar-lote', { fechaInicio: inicio, fechaFin: fin, fechaPago: pago });
     loteNominas = response.nominas || [];
     renderLote(response);
-    Utils.showToast('Lote preparado. Revisa cada empleado antes de generar.', 'success');
+    await cargarDetallesLote();
+    abrirRevisionMasiva();
+    Utils.showToast('Revisión masiva preparada.', 'success');
   } catch (e) { Utils.showToast('Error al preparar lote: ' + e.message, 'error'); }
   finally { if (button) button.disabled = false; }
+}
+
+async function cargarDetallesLote() {
+  const inicio = document.getElementById('loteFechaInicio').value;
+  const fin = document.getElementById('loteFechaFin').value;
+  loteDetalles = await Promise.all(loteNominas.map(async nomina => {
+    const desglose = await API.get('/nomina/desglose/' + nomina.usuarioId + '?inicio=' + encodeURIComponent(inicio) + '&fin=' + encodeURIComponent(fin));
+    return { nomina, desglose };
+  }));
+}
+
+function abrirRevisionMasiva() {
+  const body = document.getElementById('revisionLoteModalBody');
+  if (!body) return;
+  body.innerHTML = loteDetalles.map(detail => {
+    const n = detail.nomina;
+    const commissions = detail.desglose.comisiones || [];
+    const deductions = detail.desglose.deducciones || [];
+    const concepts = commissions.map(item => '<label class="d-flex justify-content-between align-items-center border-bottom py-2"><span><input type="checkbox" class="lote-concepto me-2" data-nomina="' + n.id + '" data-type="comision" value="' + item.id + '" data-amount="' + (item.montoComision || 0) + '" checked> ' + Utils.esc(item.fechaGeneracion || '') + ' - ' + Utils.esc(item.concepto || 'Comisión') + '</span><strong>' + Utils.formatCurrency(item.montoComision) + '</strong></label>').join('') + deductions.map(item => '<label class="d-flex justify-content-between align-items-center border-bottom py-2"><span><input type="checkbox" class="lote-concepto me-2" data-nomina="' + n.id + '" data-type="deduccion" value="' + item.id + '" data-amount="' + (item.monto || 0) + '" checked> ' + Utils.esc(item.fecha || '') + ' - ' + Utils.esc(item.concepto || 'Deducción') + '</span><strong>' + Utils.formatCurrency(item.monto) + '</strong></label>').join('');
+    return '<section class="border rounded p-3 mb-3"><div class="d-flex justify-content-between"><h6 class="mb-2">' + Utils.esc(n.usuarioNombre || n.usuarioId || '-') + '</h6><span>' + estadoBadge(n.estado) + '</span></div><div class="small text-muted mb-2">Sueldo base: ' + Utils.formatCurrency(n.sueldoBase) + '</div>' + (concepts || '<span class="text-muted">Sin comisiones ni deducciones en este periodo.</span>') + '</section>';
+  }).join('');
+  body.querySelectorAll('.lote-concepto').forEach(input => input.addEventListener('change', actualizarTotalesMasivos));
+  actualizarTotalesMasivos();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionLoteModal')).show();
+}
+
+function actualizarTotalesMasivos() {
+  const base = loteNominas.reduce((sum, item) => sum + (parseFloat(item.sueldoBase) || 0), 0);
+  let commissions = 0;
+  let deductions = 0;
+  document.querySelectorAll('.lote-concepto:checked').forEach(input => {
+    const amount = parseFloat(input.dataset.amount) || 0;
+    if (input.dataset.type === 'comision') commissions += amount; else deductions += amount;
+  });
+  const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = Utils.formatCurrency(value); };
+  set('revisionTotalBase', base); set('revisionTotalComisiones', commissions); set('revisionTotalDeducciones', deductions); set('revisionTotalNeto', base + commissions - deductions);
 }
 
 function renderLote(data) {
@@ -98,32 +137,31 @@ function renderLote(data) {
 }
 
 async function revisarLote(id, usuarioId) {
-  const inicio = document.getElementById('loteFechaInicio').value;
-  const fin = document.getElementById('loteFechaFin').value;
-  try {
-    const desglose = await API.get('/nomina/desglose/' + usuarioId + '?inicio=' + encodeURIComponent(inicio) + '&fin=' + encodeURIComponent(fin));
-    revisionLoteActual = { id, desglose };
-    const body = document.getElementById('revisionLoteModalBody');
-    if (body) body.innerHTML = '<h6>Comisiones</h6>' + (desglose.comisiones || []).map(item => '<label class="d-flex justify-content-between border-bottom py-2"><span><input type="checkbox" class="revision-comision me-2" value="' + item.id + '" checked> ' + Utils.esc(item.fechaGeneracion || '') + ' - ' + Utils.esc(item.concepto || 'Comisión') + '</span><strong>' + Utils.formatCurrency(item.montoComision) + '</strong></label>').join('') + '<h6 class="mt-3">Deducciones</h6>' + (desglose.deducciones || []).map(item => '<label class="d-flex justify-content-between border-bottom py-2"><span><input type="checkbox" class="revision-deduccion me-2" value="' + item.id + '" checked> ' + Utils.esc(item.fecha || '') + ' - ' + Utils.esc(item.concepto || 'Deducción') + '</span><strong>' + Utils.formatCurrency(item.monto) + '</strong></label>').join('');
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('revisionLoteModal')).show();
-  } catch (e) { Utils.showToast('No se pudo revisar la nómina: ' + e.message, 'error'); }
+  if (!loteDetalles.length) await cargarDetallesLote();
+  abrirRevisionMasiva();
 }
 
 async function confirmarRevisionLote() {
-  if (!revisionLoteActual) return;
   try {
-    await API.post('/nomina/' + revisionLoteActual.id + '/revisar', { comisionIds: Array.from(document.querySelectorAll('.revision-comision:checked')).map(item => parseInt(item.value)), deduccionIds: Array.from(document.querySelectorAll('.revision-deduccion:checked')).map(item => parseInt(item.value)) });
-    bootstrap.Modal.getInstance(document.getElementById('revisionLoteModal'))?.hide();
-    revisionLoteActual = null;
-    Utils.showToast('Nómina marcada como revisada', 'success');
-    await prepararLote();
+    const totalBase = loteNominas.reduce((sum, item) => sum + (parseFloat(item.sueldoBase) || 0), 0);
+    let totalComisiones = 0;
+    let totalDeducciones = 0;
+    document.querySelectorAll('.lote-concepto:checked').forEach(item => { if (item.dataset.type === 'comision') totalComisiones += parseFloat(item.dataset.amount) || 0; else totalDeducciones += parseFloat(item.dataset.amount) || 0; });
+    for (const detail of loteDetalles) {
+      const id = detail.nomina.id;
+      const selected = [...document.querySelectorAll('.lote-concepto:checked[data-nomina="' + id + '"]')];
+      await API.post('/nomina/' + id + '/revisar', { comisionIds: selected.filter(item => item.dataset.type === 'comision').map(item => parseInt(item.value)), deduccionIds: selected.filter(item => item.dataset.type === 'deduccion').map(item => parseInt(item.value)) });
+      detail.nomina.estado = 'REVISADA';
+    }
+    renderLote({ nominas: loteNominas, totalSueldoBase: totalBase, totalComisiones, totalDeducciones, totalNeto: totalBase + totalComisiones - totalDeducciones });
+    Utils.showToast('Todas las nóminas fueron marcadas como revisadas.', 'success');
   } catch (e) { Utils.showToast('No se pudo guardar la revisión: ' + e.message, 'error'); }
 }
 
 async function generarLote() {
   const ids = loteNominas.filter(item => item.estado === 'REVISADA').map(item => item.id);
   if (!ids.length) { Utils.showToast('Primero revisa al menos una nómina', 'warning'); return; }
-  try { const result = await API.post('/nomina/generar-lote', ids); Utils.showToast('Nóminas generadas correctamente', 'success'); renderLote(result); loadNominas(); }
+  try { const result = await API.post('/nomina/generar-lote', ids); bootstrap.Modal.getInstance(document.getElementById('revisionLoteModal'))?.hide(); Utils.showToast('Nóminas generadas correctamente', 'success'); renderLote(result); loadNominas(); }
   catch (e) { Utils.showToast('No se pudo generar el lote: ' + e.message, 'error'); }
 }
 
@@ -702,7 +740,7 @@ function agregarFilaComision(value = {}) {
   const row = document.createElement('div');
   row.className = 'row g-2 align-items-end mb-2 comision-nomina-row';
   row.innerHTML = '<div class="col-md-3"><label class="small">Concepto</label><input class="form-control comision-concepto" maxlength="200" value="' + Utils.esc(value.concepto || '') + '"></div>' +
-    '<div class="col-md-2"><label class="small">Tipo</label><select class="form-select comision-tipo"><option value="VENTA" ' + (value.tipoComision === 'VENTA' || !value.tipoComision ? 'selected' : '') + '>Venta</option><option value="COBRANZA" ' + (value.tipoComision === 'COBRANZA' ? 'selected' : '') + '>Cobranza</option></select></div>' +
+    '<div class="col-md-2"><label class="small">Tipo</label><select class="form-select comision-tipo"><option value="VENTA" ' + (value.tipoComision === 'VENTA' || !value.tipoComision ? 'selected' : '') + '>Venta</option><option value="COBRANZA" ' + (value.tipoComision === 'COBRANZA' ? 'selected' : '') + '>Cobranza</option><option value="BONO" ' + (value.tipoComision === 'BONO' ? 'selected' : '') + '>Bono</option><option value="REPARACION" ' + (value.tipoComision === 'REPARACION' ? 'selected' : '') + '>Reparación</option></select></div>' +
     '<div class="col-md-3"><label class="small">Fecha</label><input type="date" class="form-control comision-fecha" value="' + (value.fechaGeneracion || today) + '"></div>' +
     '<div class="col-md-3"><label class="small">Monto</label><input type="number" class="form-control comision-monto" min="0.01" step="0.01" value="' + (value.montoComision || '') + '"></div>' +
     '<div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm quitar-comision" title="Quitar"><i class="fas fa-trash"></i></button></div>';

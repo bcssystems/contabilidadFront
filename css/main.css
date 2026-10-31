@@ -281,6 +281,14 @@ hr {
 .modal-backdrop.show {
   opacity: 0.6;
 }
+
+/* Keep Bootstrap modals above the application panels and sidebar overlays. */
+.modal {
+  z-index: 1055;
+}
+.modal-backdrop {
+  z-index: 1050;
+}
 .text-muted {
   color: var(--text-muted) !important;
 }

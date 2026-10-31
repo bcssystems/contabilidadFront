@@ -40,76 +40,6 @@
           <div class="text-end mt-3"><button class="btn btn-outline-primary me-2" id="btnDescargarLote"><i class="fas fa-print me-1"></i>Imprimir lote</button><button class="btn btn-success" id="btnGenerarLote"><i class="fas fa-file-invoice-dollar me-1"></i>Generar todas las revisadas</button></div>
         </div>
       </div>
-      <div class="panel-card p-3">
-        <div class="row g-3 align-items-end">
-          <div class="col-md-5">
-            <label class="form-label">Empleado <span class="text-danger">*</span></label>
-            <select class="form-select" id="genEmpleado"></select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Inicio de nómina</label>
-            <input type="date" class="form-control" id="genFechaInicio" required>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Fin de nómina</label>
-            <input type="date" class="form-control" id="genFechaFin" required>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Fecha de pago</label>
-            <input type="date" class="form-control" id="genFecha" required>
-          </div>
-          <div class="col-md-3 d-grid">
-            <button class="btn btn-primary ripple" id="btnCargarDesglose">
-              <i class="fas fa-search me-1"></i> Cargar desglose
-            </button>
-          </div>
-        </div>
-        <div id="desgloseSection" class="mt-4" style="display:none">
-          <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <div class="panel-card p-3 text-center">
-                <small class="text-muted">Sueldo semanal</small>
-                <div class="h5 mb-0" id="desgloseSueldoSemanal">$0.00</div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="panel-card p-3 text-center">
-                <small class="text-muted">Comisiones pendientes</small>
-                <div class="h5 mb-0" id="desgloseTotalComisiones">$0.00</div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="panel-card p-3 text-center">
-                <small class="text-muted">Deducciones pendientes</small>
-                <div class="h5 mb-0" id="desgloseTotalDeducciones">$0.00</div>
-              </div>
-            </div>
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="panel-card p-3">
-                <h6 class="mb-3"><i class="fas fa-percent me-1" style="color:var(--success)"></i>Comisiones pendientes <small class="text-muted" id="comisionesCount"></small></h6>
-                <div id="comisionesList"><small class="text-muted">Sin comisiones pendientes</small></div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="panel-card p-3">
-                <h6 class="mb-3"><i class="fas fa-minus-circle me-1" style="color:var(--danger)"></i>Deducciones pendientes <small class="text-muted" id="deduccionesCount"></small></h6>
-                <div id="deduccionesList"><small class="text-muted">Sin deducciones pendientes</small></div>
-              </div>
-            </div>
-          </div>
-          <div class="panel-card p-3 mt-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div>
-              <small class="text-muted d-block">Total a pagar (neto)</small>
-              <span class="h4 mb-0" id="desgloseNeto">$0.00</span>
-            </div>
-            <button class="btn btn-success px-4 ripple" id="btnGenerarNomina">
-              <i class="fas fa-file-invoice-dollar me-1"></i> Generar N&oacute;mina
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ===== TAB: DEDUCCIONES ===== -->
@@ -138,13 +68,12 @@
                 <th>Concepto</th>
                 <th>Monto</th>
                 <th>Fecha de incidencia</th>
-                <th>Corte</th>
-                <th>Estado</th>
+                 <th>Estado</th>
                 <th style="width:120px"></th>
               </tr>
             </thead>
             <tbody id="tableDeduccionesBody">
-              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>Cargando...</p></div></td></tr>
+               <tr><td colspan="7"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>Cargando...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -221,10 +150,10 @@
 
 <!-- ===== MODAL: DEDUCCION ===== -->
 <div class="modal fade" id="deduccionModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header border-0">
-        <h5 class="modal-title fw-bold" id="deduccionModalTitle">Nueva Deducci&oacute;n</h5>
+        <h5 class="modal-title fw-bold" id="deduccionModalTitle">Agregar deducciones</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -234,26 +163,11 @@
             <label class="form-label">Empleado <span class="text-danger">*</span></label>
             <select class="form-select" id="deduccionEmpleado"></select>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Concepto <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="deduccionConcepto" maxlength="200" placeholder="Ej. Faltante de caja">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Deducciones</label>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarFilaDeduccion"><i class="fas fa-plus me-1"></i>Agregar otra</button>
           </div>
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Monto <span class="text-danger">*</span></label>
-              <input type="number" class="form-control" id="deduccionMonto" step="0.01" min="0">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Fecha</label>
-              <input type="date" class="form-control" id="deduccionFecha">
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Corte de caja (opcional)</label>
-            <select class="form-select" id="deduccionCorte">
-              <option value="">Sin corte</option>
-            </select>
-          </div>
+          <div id="deduccionFilas"></div>
         </form>
       </div>
       <div class="modal-footer border-0">

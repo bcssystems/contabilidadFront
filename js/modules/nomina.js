@@ -35,22 +35,20 @@ export function init() {
   loadNominas();
   loadDeducciones();
   loadComisionesNomina();
-  loadEmpleadosSelect('genEmpleado');
   loadEmpleadosSelect('deduccionEmpleado');
   loadEmpleadosSelect('filterEmpleadoDeduccion');
   bindEvents();
 }
 
 function bindEvents() {
-  document.getElementById('btnCargarDesglose')?.addEventListener('click', cargarDesglose);
   document.getElementById('btnPrepararLote')?.addEventListener('click', prepararLote);
   document.getElementById('btnGenerarLote')?.addEventListener('click', generarLote);
   document.getElementById('btnDescargarLote')?.addEventListener('click', descargarLote);
   document.getElementById('btnConfirmarRevisionLote')?.addEventListener('click', confirmarRevisionLote);
   document.getElementById('btnGenerarNominasModal')?.addEventListener('click', generarLote);
-  document.getElementById('btnGenerarNomina')?.addEventListener('click', generarNomina);
   document.getElementById('btnNuevaDeduccion')?.addEventListener('click', () => openDeduccionModal(null));
   document.getElementById('btnGuardarDeduccion')?.addEventListener('click', saveDeduccion);
+  document.getElementById('btnAgregarFilaDeduccion')?.addEventListener('click', () => agregarFilaDeduccion());
   document.getElementById('btnImprimirNomina')?.addEventListener('click', () => { const id = document.getElementById('nominaImpresionModal')?.dataset.nominaId; if (id) imprimirRecibo(id); });
   document.getElementById('searchDeduccion')?.addEventListener('input', Utils.debounce(function() { currentPageDed = 0; loadDeducciones(); }, 300));
   document.getElementById('filterEstadoDeduccion')?.addEventListener('change', () => { currentPageDed = 0; loadDeducciones(); });
@@ -58,8 +56,6 @@ function bindEvents() {
   ['filterEmpleadoDeduccion', 'filterDeduccionDesde', 'filterDeduccionHasta'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { currentPageDed = 0; loadDeducciones(); }));
   document.getElementById('searchNomina')?.addEventListener('input', Utils.debounce(function() { currentPageNom = 0; loadNominas(); }, 300));
   ['filterEstadoNomina', 'filterNominaDesde', 'filterNominaHasta'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { currentPageNom = 0; loadNominas(); }));
-  document.getElementById('genEmpleado')?.addEventListener('change', function() { desgloseData = null; ocultarDesglose(); });
-  ['genFechaInicio', 'genFechaFin'].forEach(id => document.getElementById(id)?.addEventListener('change', () => { desgloseData = null; ocultarDesglose(); }));
   document.getElementById('deduccionModal')?.addEventListener('hidden.bs.modal', () => { editingDeduccionId = null; });
   document.getElementById('btnNuevaComisionNomina')?.addEventListener('click', () => openComisionNomina(null));
   document.getElementById('btnGuardarComisionNomina')?.addEventListener('click', saveComisionNomina);
@@ -519,7 +515,7 @@ async function imprimirRecibo(id) {
 async function loadDeducciones() {
   const tbody = document.getElementById('tableDeduccionesBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>Cargando...</p></div></td></tr>';
+   tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>Cargando...</p></div></td></tr>';
   try {
     await API.generarDeduccionesPrestamos(new Date().toISOString().split('T')[0]);
     await API.post('/nomina/asistencia/reconciliar', {});
@@ -539,7 +535,7 @@ async function loadDeducciones() {
     const resp = await API.get('/deduccion' + params);
     renderDeducciones(resp);
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
+     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + e.message + '</p></div></td></tr>';
   }
 }
 
@@ -551,7 +547,7 @@ function renderDeducciones(data) {
   totalElementsDed = data.totalElements || 0;
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>No hay deducciones</p></div></td></tr>';
+     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-minus-circle"></i><p>No hay deducciones</p></div></td></tr>';
     renderPaginacionDed();
     return;
   }
@@ -563,8 +559,7 @@ function renderDeducciones(data) {
       '<td>' + Utils.esc(item.concepto || '-') + '</td>' +
       '<td>' + Utils.formatCurrency(item.monto) + '</td>' +
       '<td>' + Utils.formatDate(item.fecha) + '</td>' +
-      '<td>' + (item.corteCajaId ? '#' + item.corteCajaId : '-') + '</td>' +
-      '<td>' + estadoBadge(item.estado) + '</td>' +
+       '<td>' + estadoBadge(item.estado) + '</td>' +
        '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
     '</tr>'
   ).join('');
@@ -611,73 +606,63 @@ function renderPaginacionDed() {
   document.getElementById('nextPageDed')?.addEventListener('click', () => { if (currentPageDed < totalPagesDed - 1) { currentPageDed++; loadDeducciones(); } });
 }
 
-async function loadCortesSelect(selectedId) {
-  const select = document.getElementById('deduccionCorte');
-  if (!select) return;
-  select.innerHTML = '<option value="">Cargando...</option>';
-  try {
-    const resp = await API.get('/cortes?page=0&size=100');
-    const list = resp.content || resp || [];
-    select.innerHTML = '<option value="">Sin corte</option>';
-    list.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.idCorte;
-      opt.textContent = 'Corte #' + c.idCorte + ' — ' + Utils.formatDate(c.fechaCierre);
-      if (selectedId && c.idCorte === selectedId) opt.selected = true;
-      select.appendChild(opt);
-    });
-  } catch (_) {
-    select.innerHTML = '<option value="">Sin corte</option>';
-  }
-}
-
 function openDeduccionModal(id) {
   editingDeduccionId = id;
   document.getElementById('deduccionId').value = '';
-  document.getElementById('deduccionConcepto').value = '';
-  document.getElementById('deduccionMonto').value = '';
-  document.getElementById('deduccionFecha').value = new Date().toISOString().split('T')[0];
-  loadEmpleadosSelect('deduccionEmpleado', id ? null : null);
-  loadCortesSelect(id ? null : null);
+  document.getElementById('deduccionFilas').innerHTML = '';
+  loadEmpleadosSelect('deduccionEmpleado', null);
 
   if (id) {
     document.getElementById('deduccionModalTitle').textContent = 'Editar Deducci&oacute;n';
     document.getElementById('btnGuardarDeduccion').textContent = 'Actualizar';
     API.get('/deduccion/' + id).then(d => {
-      document.getElementById('deduccionConcepto').value = d.concepto || '';
-      document.getElementById('deduccionMonto').value = d.monto != null ? d.monto : '';
-      document.getElementById('deduccionFecha').value = d.fecha || new Date().toISOString().split('T')[0];
+      agregarFilaDeduccion(d);
       document.getElementById('deduccionId').value = id;
       loadEmpleadosSelect('deduccionEmpleado', d.usuarioId ? parseInt(d.usuarioId) : null);
-      loadCortesSelect(d.corteCajaId ? parseInt(d.corteCajaId) : null);
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
   } else {
-    document.getElementById('deduccionModalTitle').textContent = 'Nueva Deducci&oacute;n';
-    document.getElementById('btnGuardarDeduccion').textContent = 'Guardar';
+    document.getElementById('deduccionModalTitle').textContent = 'Agregar deducciones';
+    document.getElementById('btnGuardarDeduccion').textContent = 'Guardar deducciones';
+    agregarFilaDeduccion();
   }
   new bootstrap.Modal(document.getElementById('deduccionModal')).show();
 }
 
+function agregarFilaDeduccion(value = {}) {
+  const container = document.getElementById('deduccionFilas');
+  if (!container) return;
+  const today = new Date().toISOString().split('T')[0];
+  const row = document.createElement('div');
+  row.className = 'row g-2 align-items-end mb-2 deduccion-row';
+  row.innerHTML = '<div class="col-md-5"><label class="small">Concepto</label><input class="form-control deduccion-concepto" maxlength="200" value="' + Utils.esc(value.concepto || '') + '"></div>' +
+    '<div class="col-md-3"><label class="small">Monto</label><input type="number" class="form-control deduccion-monto" min="0.01" step="0.01" value="' + (value.monto || '') + '"></div>' +
+    '<div class="col-md-3"><label class="small">Fecha</label><input type="date" class="form-control deduccion-fecha" value="' + (value.fecha || today) + '"></div>' +
+    '<div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm quitar-deduccion" title="Quitar"><i class="fas fa-trash"></i></button></div>';
+  row.querySelector('.quitar-deduccion').addEventListener('click', () => { if (container.children.length > 1) row.remove(); });
+  container.appendChild(row);
+}
+
 async function saveDeduccion() {
   const id = document.getElementById('deduccionId').value;
-  const data = {
-      usuarioId: parseInt(document.getElementById('deduccionEmpleado').value) || null,
-    concepto: document.getElementById('deduccionConcepto').value.trim(),
-    monto: parseFloat(document.getElementById('deduccionMonto').value) || 0,
-    fecha: document.getElementById('deduccionFecha').value,
-    corteCajaId: parseInt(document.getElementById('deduccionCorte').value) || null,
-  };
-  if (!data.usuarioId || !data.concepto || !data.monto) {
-    Utils.showToast('Empleado, concepto y monto son obligatorios', 'warning');
+  const usuarioId = parseInt(document.getElementById('deduccionEmpleado').value) || null;
+  const rows = [...document.querySelectorAll('.deduccion-row')];
+  const deducciones = rows.map(row => ({
+    usuarioId,
+    concepto: row.querySelector('.deduccion-concepto').value.trim(),
+    monto: parseFloat(row.querySelector('.deduccion-monto').value) || 0,
+    fecha: row.querySelector('.deduccion-fecha').value
+  }));
+  if (!usuarioId || deducciones.some(item => !item.concepto || !item.monto || !item.fecha)) {
+    Utils.showToast('Empleado, concepto, monto y fecha son obligatorios', 'warning');
     return;
   }
   try {
     if (id) {
-      await API.put('/deduccion/' + id, data);
+      await API.put('/deduccion/' + id, deducciones[0]);
       Utils.showToast('Deducci&oacute;n actualizada', 'success');
     } else {
-      await API.post('/deduccion', data);
-      Utils.showToast('Deducci&oacute;n creada', 'success');
+      await API.post('/deduccion/lote', { deducciones });
+      Utils.showToast('Deducciones creadas', 'success');
     }
     bootstrap.Modal.getInstance(document.getElementById('deduccionModal'))?.hide();
     loadDeducciones();
@@ -708,9 +693,16 @@ async function loadComisionesNomina() {
     const hasta = document.getElementById('filterComisionNominaHasta')?.value || '';
     const resp = await API.get('/comision?page=' + currentPageComNom + '&size=20&sort=idComision,desc' + (q ? '&search=' + encodeURIComponent(q) : '') + (state ? '&estadoComision=' + state : '') + (desde ? '&desde=' + desde : '') + (hasta ? '&hasta=' + hasta : ''));
     const list = resp.content || [];
-    tbody.innerHTML = list.length ? list.map(c => '<tr><td>' + c.id + '</td><td>' + Utils.esc(c.usuarioNombre || '-') + '</td><td>' + Utils.esc(c.concepto || '-') + '</td><td>' + Utils.esc(c.tipoComision || '-') + '</td><td>' + Utils.formatCurrency(c.montoComision) + '</td><td>' + estadoBadge(c.estadoComision) + '</td><td><button class="btn btn-sm btn-outline-secondary me-1 edit-comision-nomina" data-id="' + c.id + '"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-outline-danger delete-comision-nomina" data-id="' + c.id + '"><i class="fas fa-trash"></i></button></td></tr>').join('') : '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-percent"></i><p>No hay comisiones</p></div></td></tr>';
-    tbody.querySelectorAll('.edit-comision-nomina').forEach(b => b.addEventListener('click', () => openComisionNomina(Number(b.dataset.id))));
-    tbody.querySelectorAll('.delete-comision-nomina').forEach(b => b.addEventListener('click', () => deleteComisionNomina(Number(b.dataset.id))));
+    tbody.innerHTML = list.length ? list.map(c => '<tr><td>' + c.id + '</td><td>' + Utils.esc(c.usuarioNombre || '-') + '</td><td>' + Utils.esc(c.concepto || '-') + '</td><td>' + Utils.esc(c.tipoComision || '-') + '</td><td>' + Utils.formatCurrency(c.montoComision) + '</td><td>' + estadoBadge(c.estadoComision) + '</td><td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + c.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td></tr>').join('') : '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-percent"></i><p>No hay comisiones</p></div></td></tr>';
+    tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+      event.stopPropagation();
+      button.classList.add('show');
+      const id = Number(button.dataset.id);
+      Utils.abrirMenuKebab(button, [
+        { icon: 'fa-edit', text: 'Editar comisión', onClick: () => openComisionNomina(id) },
+        { icon: 'fa-trash', text: 'Eliminar comisión', danger: true, onClick: () => deleteComisionNomina(id) }
+      ]);
+    }));
     const pagination = document.getElementById('paginationComisionesNomina');
     if (pagination) pagination.innerHTML = resp.totalPages > 1 ? '<button class="btn btn-sm btn-outline-secondary" id="prevComNom" ' + (currentPageComNom === 0 ? 'disabled' : '') + '>Anterior</button> <span class="mx-2">Página ' + (currentPageComNom + 1) + ' de ' + resp.totalPages + '</span><button class="btn btn-sm btn-outline-secondary" id="nextComNom" ' + (currentPageComNom >= resp.totalPages - 1 ? 'disabled' : '') + '>Siguiente</button>' : '';
     document.getElementById('prevComNom')?.addEventListener('click', () => { currentPageComNom--; loadComisionesNomina(); });

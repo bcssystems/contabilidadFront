@@ -615,6 +615,114 @@ body {
 .camera-box.active video { display: block; }
 .camera-box.active #cameraPlaceholder { display: none; }
 #cameraPlaceholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-muted); }
+.selfie-upload-animation {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.72);
+  z-index: 2;
+}
+.selfie-upload-animation.active { display: flex; }
+.upload-character {
+  position: relative;
+  width: 76px;
+  height: 104px;
+  animation: uploadCharacterFloat 1.4s ease-in-out infinite;
+}
+.upload-antenna {
+  position: absolute;
+  top: 0;
+  left: 36px;
+  width: 4px;
+  height: 14px;
+  border-radius: 4px;
+  background: #94a3b8;
+}
+.upload-antenna::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 12px var(--primary);
+  animation: uploadAntennaPulse 0.9s ease-in-out infinite alternate;
+}
+.upload-head {
+  position: absolute;
+  top: 12px;
+  left: 11px;
+  width: 54px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-radius: 15px 15px 12px 12px;
+  background: #334155;
+  box-shadow: inset 0 -5px 0 rgba(15, 23, 42, 0.35), 0 5px 0 #0f172a;
+}
+.upload-eye {
+  position: absolute;
+  top: 13px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 7px var(--primary);
+  animation: uploadBlink 3s infinite;
+}
+.upload-eye-left { left: 13px; }
+.upload-eye-right { right: 13px; }
+.upload-mouth {
+  position: absolute;
+  left: 21px;
+  bottom: 7px;
+  width: 8px;
+  height: 3px;
+  border-radius: 3px;
+  background: #e2e8f0;
+}
+.upload-body {
+  position: absolute;
+  top: 58px;
+  left: 19px;
+  width: 38px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-radius: 9px;
+  background: #475569;
+  box-shadow: 0 5px 0 #0f172a;
+}
+.upload-body::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  box-shadow: 0 0 7px var(--primary);
+}
+.upload-arm, .upload-leg {
+  position: absolute;
+  display: block;
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+.upload-arm { top: 4px; width: 7px; height: 25px; }
+.upload-arm-left { left: -12px; transform: rotate(28deg); animation: uploadArmLeft 0.7s ease-in-out infinite alternate; }
+.upload-arm-right { right: -12px; transform: rotate(-28deg); animation: uploadArmRight 0.7s ease-in-out infinite alternate; }
+.upload-leg { top: 27px; width: 8px; height: 17px; }
+.upload-leg-left { left: 5px; transform: rotate(8deg); }
+.upload-leg-right { right: 5px; transform: rotate(-8deg); }
+@keyframes uploadCharacterFloat { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(-5px); } }
+@keyframes uploadAntennaPulse { from { transform: scale(0.8); } to { transform: scale(1.15); } }
+@keyframes uploadBlink { 0%, 44%, 48%, 100% { transform: scaleY(1); } 46% { transform: scaleY(0.15); } }
+@keyframes uploadArmLeft { from { transform: rotate(18deg); } to { transform: rotate(38deg); } }
+@keyframes uploadArmRight { from { transform: rotate(-38deg); } to { transform: rotate(-18deg); } }
 .labor-calendar { overflow-x: auto; }
 .labor-calendar-grid { min-width: 760px; display: grid; grid-template-columns: repeat(7, minmax(100px, 1fr)); gap: 8px; }
 .labor-calendar-day { min-height: 120px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }

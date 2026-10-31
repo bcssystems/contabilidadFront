@@ -63,6 +63,7 @@ function takeSelfie() {
     preview.classList.remove('d-none');
     video.classList.add('d-none');
     document.getElementById('selfieStatus').textContent = 'Selfie capturada. Obteniendo ubicación para registrar...';
+    setUploadAnimation(true);
     await register(selectedRoute);
   }, 'image/jpeg', 0.92);
 }
@@ -92,9 +93,14 @@ async function register(route) {
     show(errorMessage(error), 'danger');
   } finally {
     submitting = false;
+    setUploadAnimation(false);
     setActionButtons(false);
     loadBoard();
   }
+}
+
+function setUploadAnimation(active) {
+  document.getElementById('selfieUploadAnimation')?.classList.toggle('active', active);
 }
 
 function setActionButtons(disabled) {

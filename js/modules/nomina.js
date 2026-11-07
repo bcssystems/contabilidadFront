@@ -10,6 +10,8 @@ let currentPageComNom = 0;
 let loteNominas = [];
 let loteDetalles = [];
 let revisionLotePendiente = false;
+let generacionLoteEnCurso = false;
+let loteGenerado = false;
 const PAGE_SIZE = 20;
 
 export function init() {
@@ -42,11 +44,17 @@ export function init() {
 }
 
 function bindEvents() {
-  document.getElementById('btnPrepararLote')?.addEventListener('click', prepararLote);
-  document.getElementById('btnGenerarLote')?.addEventListener('click', generarLote);
-  document.getElementById('btnDescargarLote')?.addEventListener('click', descargarLote);
-  document.getElementById('btnConfirmarRevisionLote')?.addEventListener('click', confirmarRevisionLote);
-  document.getElementById('btnGenerarNominasModal')?.addEventListener('click', generarLote);
+  const bindOnce = (id, event, handler) => {
+    const element = document.getElementById(id);
+    if (!element || element.dataset.nominaBound === 'true') return;
+    element.addEventListener(event, handler);
+    element.dataset.nominaBound = 'true';
+  };
+  bindOnce('btnPrepararLote', 'click', prepararLote);
+  bindOnce('btnGenerarLote', 'click', generarLote);
+  bindOnce('btnDescargarLote', 'click', descargarLote);
+  bindOnce('btnConfirmarRevisionLote', 'click', confirmarRevisionLote);
+  bindOnce('btnGenerarNominasModal', 'click', generarLote);
   document.getElementById('btnNuevaDeduccion')?.addEventListener('click', () => openDeduccionModal(null));
   document.getElementById('btnGuardarDeduccion')?.addEventListener('click', saveDeduccion);
   document.getElementById('btnAgregarFilaDeduccion')?.addEventListener('click', () => agregarFilaDeduccion());
@@ -74,6 +82,9 @@ async function prepararLote() {
   const button = document.getElementById('btnPrepararLote');
   if (button) button.disabled = true;
   revisionLotePendiente = false;
+  generacionLoteEnCurso = false;
+  loteGenerado = false;
+  actualizarBotonesGeneracion();
   try {
     const response = await API.post('/nomina/preparar-lote', { fechaInicio: inicio, fechaFin: fin, fechaPago: pago });
     loteNominas = response.nominas || [];
@@ -168,25 +179,74 @@ async function confirmarRevisionLote() {
 }
 
 async function generarLote() {
+  if (generacionLoteEnCurso || loteGenerado) {
+    Utils.showToast('Este lote ya fue generado.', 'warning');
+    return;
+  }
   if (revisionLotePendiente) {
     Utils.showToast('Aplica la revisión después de modificar los conceptos seleccionados', 'warning');
     return;
   }
   const ids = loteNominas.filter(item => item.estado === 'REVISADA').map(item => item.id);
   if (!ids.length) { Utils.showToast('Primero revisa al menos una nómina', 'warning'); return; }
-  try { const result = await API.post('/nomina/generar-lote', ids); bootstrap.Modal.getInstance(document.getElementById('revisionLoteModal'))?.hide(); Utils.showToast('Nóminas generadas correctamente', 'success'); renderLote(result); loadNominas(); }
-  catch (e) { Utils.showToast('No se pudo generar el lote: ' + e.message, 'error'); }
+  generacionLoteEnCurso = true;
+  actualizarBotonesGeneracion();
+  try {
+    const result = await API.post('/nomina/generar-lote', ids);
+    const generated = result.nominas || [];
+    const generatedById = new Map(generated.map(item => [String(item.id), item]));
+    loteNominas = loteNominas.map(item => generatedById.get(String(item.id)) || item);
+    loteGenerado = generated.length > 0 && generated.every(item => item.estado === 'GENERADA');
+    generacionLoteEnCurso = false;
+    actualizarBotonesGeneracion();
+    bootstrap.Modal.getInstance(document.getElementById('revisionLoteModal'))?.hide();
+    renderLote(result);
+    loadNominas();
+    Utils.showToast('Nóminas generadas correctamente', 'success');
+    if (loteGenerado) await descargarEImprimirLote(generated.map(item => item.id));
+  } catch (e) {
+    generacionLoteEnCurso = false;
+    actualizarBotonesGeneracion();
+    Utils.showToast('No se pudo generar el lote: ' + e.message, 'error');
+  }
+}
+
+function actualizarBotonesGeneracion() {
+  const disabled = generacionLoteEnCurso || loteGenerado;
+  ['btnGenerarLote', 'btnGenerarNominasModal'].forEach(id => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.disabled = disabled;
+    if (loteGenerado) button.title = 'Este lote ya fue generado';
+  });
 }
 
 async function descargarLote() {
-  const ids = loteNominas.filter(item => item.estado === 'REVISADA' || item.estado === 'GENERADA').map(item => item.id);
+  const ids = loteNominas.filter(item => item.estado === 'GENERADA').map(item => item.id);
   if (!ids.length) { Utils.showToast('No hay nóminas para imprimir', 'warning'); return; }
+  await descargarEImprimirLote(ids);
+}
+
+async function descargarEImprimirLote(ids) {
+  if (!ids?.length) return;
   try {
     const blob = await API.downloadPost('/nomina/lote/pdf', ids);
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href = url; link.download = 'nominas-lote.pdf'; link.click();
-    URL.revokeObjectURL(url);
-  } catch (e) { Utils.showToast('No se pudo generar el lote PDF: ' + e.message, 'error'); }
+    const printWindow = window.open(url, '_blank');
+    if (printWindow) {
+      printWindow.addEventListener('load', () => printWindow.print());
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } else {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'nominas-lote.pdf';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      Utils.showToast('Permite ventanas emergentes para imprimir automáticamente', 'warning');
+    }
+  } catch (e) {
+    Utils.showToast('No se pudo generar el lote PDF: ' + e.message, 'error');
+  }
 }
 
 /* ============ DESGLOSE / GENERAR ============ */

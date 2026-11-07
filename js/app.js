@@ -2183,9 +2183,11 @@ window.openComisionModal = function() {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Tipo de ComisiÃ³n</label>
-                    <select class="form-select" name="tipoComision" required>
-                        <option value="VENTA">Venta</option>
-                        <option value="COBRANZA">Cobranza</option>
+                        <select class="form-select" name="tipoComision" required>
+                            <option value="VENTA">Venta</option>
+                            <option value="COBRANZA">Cobranza</option>
+                            <option value="BONO">Bono</option>
+                            <option value="REPARACION">Reparación</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -2249,6 +2251,8 @@ window.editComision = async function(id) {
                         <select class="form-select" name="tipoComision" required>
                             <option value="VENTA" ${comision.tipoComision === 'VENTA' ? 'selected' : ''}>Venta</option>
                             <option value="COBRANZA" ${comision.tipoComision === 'COBRANZA' ? 'selected' : ''}>Cobranza</option>
+                            <option value="BONO" ${comision.tipoComision === 'BONO' ? 'selected' : ''}>Bono</option>
+                            <option value="REPARACION" ${comision.tipoComision === 'REPARACION' ? 'selected' : ''}>Reparación</option>
                         </select>
                     </div>
                     <div class="form-group">

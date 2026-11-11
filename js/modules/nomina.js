@@ -37,6 +37,7 @@ export function init() {
   if (document.getElementById('loteFechaPago')) document.getElementById('loteFechaPago').value = dateValue(payment);
   loadNominas();
   loadDeducciones();
+  loadDeduccionesFijas();
   loadComisionesNomina();
   loadEmpleadosSelect('deduccionEmpleado');
   loadEmpleadosSelect('filterEmpleadoDeduccion');
@@ -57,6 +58,10 @@ function bindEvents() {
   bindOnce('btnGenerarNominasModal', 'click', generarLote);
   document.getElementById('btnNuevaDeduccion')?.addEventListener('click', () => openDeduccionModal(null));
   document.getElementById('btnGuardarDeduccion')?.addEventListener('click', saveDeduccion);
+  bindOnce('btnNuevaDeduccionFija', 'click', () => openDeduccionFijaModal(null));
+  bindOnce('btnGuardarDeduccionFija', 'click', saveDeduccionFija);
+  bindOnce('btnMostrarDeduccionesManuales', 'click', () => mostrarApartadoDeducciones('manuales'));
+  bindOnce('btnMostrarDeduccionesFijas', 'click', () => mostrarApartadoDeducciones('fijas'));
   document.getElementById('btnAgregarFilaDeduccion')?.addEventListener('click', () => agregarFilaDeduccion());
   document.getElementById('btnImprimirNomina')?.addEventListener('click', () => { const id = document.getElementById('nominaImpresionModal')?.dataset.nominaId; if (id) imprimirRecibo(id); });
   document.getElementById('searchDeduccion')?.addEventListener('input', Utils.debounce(function() { currentPageDed = 0; loadDeducciones(); }, 300));
@@ -698,8 +703,8 @@ function openDeduccionModal(id) {
       loadEmpleadosSelect('deduccionEmpleado', d.usuarioId ? parseInt(d.usuarioId) : null);
     }).catch(e => Utils.showToast('Error: ' + e.message, 'error'));
   } else {
-    document.getElementById('deduccionModalTitle').textContent = 'Agregar deducciones';
-    document.getElementById('btnGuardarDeduccion').textContent = 'Guardar deducciones';
+    document.getElementById('deduccionModalTitle').textContent = 'Agregar deducción manual';
+    document.getElementById('btnGuardarDeduccion').textContent = 'Guardar deducciones manuales';
     agregarFilaDeduccion();
   }
   new bootstrap.Modal(document.getElementById('deduccionModal')).show();
@@ -758,6 +763,135 @@ async function deleteDeduccion(id) {
   } catch (e) {
     Utils.showToast('Error: ' + e.message, 'error');
   }
+}
+
+/* ============ DEDUCCIONES FIJAS SEMANALES ============ */
+
+function mostrarApartadoDeducciones(apartado) {
+  const manuales = document.getElementById('deduccionesManualesSection');
+  const fijas = document.getElementById('deduccionesFijasSection');
+  const manualBtn = document.getElementById('btnMostrarDeduccionesManuales');
+  const fijaBtn = document.getElementById('btnMostrarDeduccionesFijas');
+  const mostrarFijas = apartado === 'fijas';
+  manuales?.classList.toggle('d-none', mostrarFijas);
+  fijas?.classList.toggle('d-none', !mostrarFijas);
+  manualBtn?.classList.toggle('btn-primary', !mostrarFijas);
+  manualBtn?.classList.toggle('btn-outline-primary', mostrarFijas);
+  fijaBtn?.classList.toggle('btn-primary', mostrarFijas);
+  fijaBtn?.classList.toggle('btn-outline-primary', !mostrarFijas);
+}
+
+async function loadDeduccionesFijas() {
+  const tbody = document.getElementById('tableDeduccionesFijasBody');
+  if (!tbody) return;
+  try {
+    const list = await API.get('/deduccion-fija');
+    renderDeduccionesFijas(Array.isArray(list) ? list : []);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ' + Utils.esc(e.message) + '</p></div></td></tr>';
+  }
+}
+
+function renderDeduccionesFijas(list) {
+  const tbody = document.getElementById('tableDeduccionesFijasBody');
+  if (!tbody) return;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-calendar-minus"></i><p>No hay deducciones fijas configuradas</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(item => '<tr>' +
+    '<td>' + item.id + '</td>' +
+    '<td>' + Utils.esc(item.concepto || '-') + '</td>' +
+    '<td>' + Utils.formatCurrency(item.monto) + '</td>' +
+    '<td>' + Utils.esc((item.usuarios || []).join(', ') || '-') + '</td>' +
+    '<td>' + Utils.formatDate(item.fechaInicio) + (item.fechaFin ? ' - ' + Utils.formatDate(item.fechaFin) : ' en adelante') + '</td>' +
+    '<td>' + (item.activo ? '<span class="badge-status badge-active">Activa</span>' : '<span class="badge-status badge-inactive">Inactiva</span>') + '</td>' +
+    '<td class="acciones-cell"><button type="button" class="btn-kebab-toggle kebab-trigger" data-id="' + item.id + '" title="Acciones"><i class="fas fa-ellipsis-v"></i></button></td>' +
+    '</tr>').join('');
+
+  tbody.querySelectorAll('.kebab-trigger').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    button.classList.add('show');
+    const item = list.find(row => String(row.id) === button.dataset.id);
+    const actions = [
+      { icon: 'fa-edit', text: 'Editar deducción fija', onClick: () => openDeduccionFijaModal(item.id) },
+      { icon: item.activo ? 'fa-toggle-off' : 'fa-toggle-on', text: item.activo ? 'Desactivar' : 'Activar', onClick: () => toggleDeduccionFija(item) },
+    ];
+    if (!item.activo) actions.push({ icon: 'fa-trash', text: 'Eliminar configuración', danger: true, onClick: () => deleteDeduccionFija(item.id) });
+    Utils.abrirMenuKebab(button, actions);
+  }));
+}
+
+async function loadUsuariosDeduccionFija(selectedIds = []) {
+  const container = document.getElementById('deduccionFijaUsuarios');
+  if (!container) return;
+  try {
+    const resp = await API.get('/usuarios');
+    const list = Array.isArray(resp) ? resp : (resp.content || []);
+    container.innerHTML = list.filter(u => u.activo !== false).map(u => {
+      const id = u.idUsuario ?? u.id;
+      const name = [u.nombre, u.primerApellido, u.segundoApellido].filter(Boolean).join(' ') || u.username || ('Usuario #' + id);
+      return '<div class="form-check"><input class="form-check-input deduccion-fija-usuario" type="checkbox" value="' + id + '" id="deduccion-fija-usuario-' + id + '" ' + (selectedIds.includes(Number(id)) ? 'checked' : '') + '><label class="form-check-label" for="deduccion-fija-usuario-' + id + '">' + Utils.esc(name) + ' (#' + id + ')</label></div>';
+    }).join('') || '<small class="text-muted">No hay usuarios activos.</small>';
+  } catch (e) { container.innerHTML = '<small class="text-danger">Error al cargar usuarios: ' + Utils.esc(e.message) + '</small>'; }
+}
+
+async function openDeduccionFijaModal(id) {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('deduccionFijaId').value = id || '';
+  document.getElementById('deduccionFijaConcepto').value = '';
+  document.getElementById('deduccionFijaMonto').value = '';
+  document.getElementById('deduccionFijaInicio').value = today;
+  document.getElementById('deduccionFijaFin').value = '';
+  document.getElementById('deduccionFijaActivo').checked = true;
+  document.getElementById('deduccionFijaModalTitle').textContent = id ? 'Editar deducción fija semanal' : 'Nueva deducción fija semanal';
+  if (id) {
+    try {
+      const item = await API.get('/deduccion-fija/' + id);
+      document.getElementById('deduccionFijaConcepto').value = item.concepto || '';
+      document.getElementById('deduccionFijaMonto').value = item.monto || '';
+      document.getElementById('deduccionFijaInicio').value = item.fechaInicio || today;
+      document.getElementById('deduccionFijaFin').value = item.fechaFin || '';
+      document.getElementById('deduccionFijaActivo').checked = item.activo !== false;
+      await loadUsuariosDeduccionFija((item.usuarioIds || []).map(Number));
+    } catch (e) { Utils.showToast('Error: ' + e.message, 'error'); return; }
+  } else await loadUsuariosDeduccionFija([]);
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('deduccionFijaModal')).show();
+}
+
+async function saveDeduccionFija() {
+  const id = document.getElementById('deduccionFijaId').value;
+  const data = {
+    concepto: document.getElementById('deduccionFijaConcepto').value.trim(),
+    monto: Number(document.getElementById('deduccionFijaMonto').value),
+    activo: document.getElementById('deduccionFijaActivo').checked,
+    fechaInicio: document.getElementById('deduccionFijaInicio').value,
+    fechaFin: document.getElementById('deduccionFijaFin').value || null,
+    usuarioIds: [...document.querySelectorAll('.deduccion-fija-usuario:checked')].map(input => Number(input.value)),
+  };
+  if (!data.concepto || !data.monto || !data.fechaInicio || !data.usuarioIds.length || (data.fechaFin && data.fechaFin < data.fechaInicio)) {
+    Utils.showToast('Concepto, monto, vigencia y al menos un usuario son obligatorios', 'warning'); return;
+  }
+  try {
+    if (id) await API.put('/deduccion-fija/' + id, data); else await API.post('/deduccion-fija', data);
+    bootstrap.Modal.getInstance(document.getElementById('deduccionFijaModal'))?.hide();
+    loadDeduccionesFijas();
+    Utils.showToast(id ? 'Deducción fija actualizada' : 'Deducción fija creada', 'success');
+  } catch (e) { Utils.showToast('Error: ' + e.message, 'error'); }
+}
+
+async function toggleDeduccionFija(item) {
+  try {
+    await API.put('/deduccion-fija/' + item.id, { concepto: item.concepto, monto: item.monto, activo: !item.activo, fechaInicio: item.fechaInicio, fechaFin: item.fechaFin, usuarioIds: item.usuarioIds });
+    loadDeduccionesFijas();
+    Utils.showToast(item.activo ? 'Deducción fija desactivada' : 'Deducción fija activada', 'success');
+  } catch (e) { Utils.showToast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteDeduccionFija(id) {
+  if (!(await Utils.confirmAction('¿Eliminar esta configuración? Se conservarán las deducciones ya aplicadas.', 'Confirmar', 'Eliminar'))) return;
+  try { await API.del('/deduccion-fija/' + id); loadDeduccionesFijas(); Utils.showToast('Configuración eliminada', 'success'); }
+  catch (e) { Utils.showToast('Error: ' + e.message, 'error'); }
 }
 
 async function loadComisionesNomina() {

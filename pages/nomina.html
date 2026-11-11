@@ -11,7 +11,7 @@
       <button class="nav-link active" id="tabGenerarBtn" data-bs-toggle="tab" data-bs-target="#tabGenerar" type="button" role="tab">Generar</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tabDeduccionesBtn" data-bs-toggle="tab" data-bs-target="#tabDeducciones" type="button" role="tab">Deducciones</button>
+      <button class="nav-link" id="tabDeduccionesBtn" data-bs-toggle="tab" data-bs-target="#tabDeducciones" type="button" role="tab">Deducciones manuales</button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="tabComisionesBtn" data-bs-toggle="tab" data-bs-target="#tabComisiones" type="button" role="tab">Comisiones</button>
@@ -44,18 +44,23 @@
 
     <!-- ===== TAB: DEDUCCIONES ===== -->
     <div class="tab-pane fade p-3" id="tabDeducciones" role="tabpanel">
+      <div class="btn-group mb-3" role="group" aria-label="Tipo de deducción">
+        <button type="button" class="btn btn-primary" id="btnMostrarDeduccionesManuales">Deducciones manuales</button>
+        <button type="button" class="btn btn-outline-primary" id="btnMostrarDeduccionesFijas">Deducciones fijas</button>
+      </div>
+      <div id="deduccionesManualesSection">
       <div class="filter-bar filter-grid-3 mb-3">
         <div class="input-group">
           <span class="input-group-text"><i class="fas fa-search"></i></span>
           <input type="text" class="form-control" id="searchDeduccion" placeholder="Buscar deducci&oacute;n...">
         </div>
         <select class="form-select" id="filterEstadoDeduccion"><option value="">Todos los estados</option><option value="PENDIENTE">Pendiente</option><option value="APROBADA">Aprobada</option><option value="APLICADA">Aplicada</option><option value="RECHAZADA">Rechazada</option></select>
-        <select class="form-select" id="filterOrigenDeduccion"><option value="">Todos los or&iacute;genes</option><option value="ASISTENCIA">Asistencia</option><option value="PRESTAMO">Pr&eacute;stamo</option><option value="MANUAL">Manual</option></select>
+        <select class="form-select" id="filterOrigenDeduccion"><option value="">Todos los or&iacute;genes</option><option value="ASISTENCIA">Asistencia</option><option value="PRESTAMO">Pr&eacute;stamo</option><option value="MANUAL">Manual</option><option value="FIJA">Fija semanal</option></select>
         <select class="form-select" id="filterEmpleadoDeduccion"><option value="">Todos los empleados</option></select>
         <div class="filter-field"><label for="filterDeduccionDesde">Desde</label><input type="date" class="form-control" id="filterDeduccionDesde"></div>
         <div class="filter-field"><label for="filterDeduccionHasta">Hasta</label><input type="date" class="form-control" id="filterDeduccionHasta"></div>
         <button class="btn btn-primary ripple" id="btnNuevaDeduccion">
-          <i class="fas fa-plus me-1"></i> Nueva Deducci&oacute;n
+          <i class="fas fa-plus me-1"></i> Nueva Deducci&oacute;n manual
         </button>
       </div>
       <div class="panel-card overflow-hidden">
@@ -79,6 +84,17 @@
         </div>
       </div>
       <div class="mt-3" id="paginationDeducciones"></div>
+      </div>
+      <div id="deduccionesFijasSection" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div><h5 class="mb-1">Deducciones fijas semanales</h5><small class="text-muted">Se generan automáticamente una vez por periodo semanal para los usuarios asignados.</small></div>
+          <button class="btn btn-primary ripple" id="btnNuevaDeduccionFija"><i class="fas fa-plus me-1"></i>Nueva deducción fija</button>
+        </div>
+        <div class="panel-card overflow-hidden"><div class="table-responsive"><table class="table table-custom mb-0">
+          <thead><tr><th>ID</th><th>Concepto</th><th>Monto semanal</th><th>Usuarios</th><th>Vigencia</th><th>Estado</th><th style="width:120px"></th></tr></thead>
+          <tbody id="tableDeduccionesFijasBody"><tr><td colspan="7"><div class="empty-state"><i class="fas fa-calendar-minus"></i><p>Cargando...</p></div></td></tr></tbody>
+        </table></div></div>
+      </div>
     </div>
 
     <!-- ===== TAB: NOMINAS ===== -->
@@ -133,6 +149,23 @@
   </div>
 </div>
 
+<div class="modal fade" id="deduccionFijaModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="deduccionFijaModalTitle">Nueva deducción fija semanal</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="formDeduccionFija"><input type="hidden" id="deduccionFijaId">
+      <div class="row g-3">
+        <div class="col-md-8"><label class="form-label">Concepto <span class="text-danger">*</span></label><input class="form-control" id="deduccionFijaConcepto" maxlength="200" required></div>
+        <div class="col-md-4"><label class="form-label">Monto semanal <span class="text-danger">*</span></label><input class="form-control" id="deduccionFijaMonto" type="number" min="0.01" step="0.01" required></div>
+        <div class="col-md-6"><label class="form-label">Inicio de vigencia <span class="text-danger">*</span></label><input class="form-control" id="deduccionFijaInicio" type="date" required></div>
+        <div class="col-md-6"><label class="form-label">Fin de vigencia</label><input class="form-control" id="deduccionFijaFin" type="date"></div>
+        <div class="col-12"><label class="form-label">Usuarios asignados <span class="text-danger">*</span></label><div id="deduccionFijaUsuarios" class="border rounded p-2" style="max-height:220px;overflow:auto"><small class="text-muted">Cargando usuarios...</small></div></div>
+        <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" id="deduccionFijaActivo" checked><label class="form-check-label" for="deduccionFijaActivo">Activa</label></div></div>
+      </div>
+    </form></div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="btnGuardarDeduccionFija">Guardar</button></div>
+  </div></div>
+</div>
+
 <div class="modal fade" id="comisionNominaModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content border-0 shadow">
     <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="comisionNominaModalTitle">Nueva Comisión</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -153,7 +186,7 @@
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header border-0">
-        <h5 class="modal-title fw-bold" id="deduccionModalTitle">Agregar deducciones</h5>
+        <h5 class="modal-title fw-bold" id="deduccionModalTitle">Agregar deducción manual</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">

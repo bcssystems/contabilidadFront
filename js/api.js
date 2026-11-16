@@ -96,12 +96,41 @@ const API = (() => {
     return response.blob();
   }
 
+  async function downloadPost(endpoint, body, retry = true) {
+    await csrf();
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': cookie('XSRF-TOKEN') || csrfToken },
+      body: JSON.stringify(body),
+    });
+    if (response.status === 401 && retry) { await refresh(); return downloadPost(endpoint, body, false); }
+    if (!response.ok) throw new Error('No se pudo descargar el archivo');
+    return response.blob();
+  }
+
+  // Compatibilidad con los módulos de asistencia y nómina existentes.
+  const entrada = formData => upload('/checador/entrada', formData);
+  const salida = formData => upload('/checador/salida', formData);
+  const miTablero = () => request('/checador/mi-tablero');
+  const horarios = () => request('/horarios');
+  const horarioEmpleado = id => request('/usuarios/' + encodeURIComponent(id) + '/horario');
+  const guardarHorarioEmpleado = (id, body) => request('/usuarios/' + encodeURIComponent(id) + '/horario', { method: 'POST', body: JSON.stringify(body) });
+  const puntosGeograficos = () => request('/puntos-geograficos');
+  const evidencias = () => request('/asistencias/evidencias');
+  const justificacionesPendientes = () => request('/justificaciones/pendientes');
+  const aprobarEvidencia = id => request('/asistencias/evidencias/' + encodeURIComponent(id) + '/aprobar', { method: 'POST' });
+  const rechazarEvidencia = (id, body) => request('/asistencias/evidencias/' + encodeURIComponent(id) + '/rechazar', { method: 'POST', body: JSON.stringify(body || {}) });
+  const generarDeduccionesPrestamos = fecha => request('/prestamos/deducciones/generar', { method: 'POST', body: JSON.stringify({ fecha }) });
+
   return {
     baseUrl, mediaBaseUrl: baseUrl.replace(/\/api\/v1\/?$/, ''), getSession: () => session, setSession,
     cargarCsrf: loadCsrf, cerrarSesion: logout, get: endpoint => request(endpoint),
     post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
     put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
     del: endpoint => request(endpoint, { method: 'DELETE' }), upload, requestUpload: upload,
-    request, download,
+    request, download, downloadPost,
+    entrada, salida, miTablero, horarios, horarioEmpleado, guardarHorarioEmpleado,
+    puntosGeograficos, evidencias, justificacionesPendientes, aprobarEvidencia,
+    rechazarEvidencia, generarDeduccionesPrestamos,
   };
 })();

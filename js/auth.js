@@ -1,5 +1,7 @@
 const Auth = {
   init() {
+    if (this._initialized) return;
+    this._initialized = true;
     const form = document.getElementById('login-form');
     if (form) form.addEventListener('submit', event => { event.preventDefault(); this.login(); });
     const toggle = document.getElementById('toggle-password');

@@ -1,5 +1,6 @@
 let _sidebarDelegationReady = false;
 let _notificationsReady = false;
+let _dashboardReady = false;
 
 const ENABLED_MODULES = new Set([
   'inicio',
@@ -118,6 +119,8 @@ function initSidebarDelegation() {
 
 const Dashboard = {
   init() {
+    if (_dashboardReady) return;
+    _dashboardReady = true;
     configureSidebarModules();
     initSidebarDelegation();
     const username = localStorage.getItem('userNombre') || localStorage.getItem('username') || 'Usuario';

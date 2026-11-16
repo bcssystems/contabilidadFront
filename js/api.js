@@ -1,204 +1,107 @@
-const API = {
-  baseUrl: 'http://localhost:8887/api/v1',
-  _mediaBaseUrl: undefined,
-  _sessionClosing: false,
-  get mediaBaseUrl() {
-    if (this._mediaBaseUrl !== undefined) return this._mediaBaseUrl;
-    if (window.location.port && window.location.port !== '8887') {
-      this._mediaBaseUrl = window.location.protocol + '//' + window.location.hostname + ':8887';
-    } else {
-      this._mediaBaseUrl = '';
+const API = (() => {
+  const baseUrl = window.location.hostname === 'admon.omisoltec.mx'
+    ? `${window.location.origin}/api/v1`
+    : 'http://localhost:8887/api/v1';
+  let csrfToken = null;
+  let csrfPromise = null;
+  let refreshPromise = null;
+  let session = null;
+
+  const authEndpoint = endpoint => /\/auth\/(login|refresh-token|logout|csrf)$/.test(endpoint);
+  const mutation = method => !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const cookie = name => {
+    const item = document.cookie.split('; ').find(value => value.startsWith(`${name}=`));
+    return item ? decodeURIComponent(item.substring(name.length + 1)) : null;
+  };
+
+  async function loadCsrf() {
+    if (csrfPromise) return csrfPromise;
+    csrfPromise = fetch(`${baseUrl}/auth/csrf`, { credentials: 'include', cache: 'no-store' })
+      .then(response => { if (!response.ok) throw new Error('No se pudo inicializar CSRF'); return response.json(); })
+      .then(data => { csrfToken = data.token; return csrfToken; })
+      .finally(() => { csrfPromise = null; });
+    return csrfPromise;
+  }
+
+  async function csrf() {
+    if (!cookie('XSRF-TOKEN')) await loadCsrf();
+    csrfToken = cookie('XSRF-TOKEN') || csrfToken;
+    return csrfToken;
+  }
+
+  function clearAuthState() {
+    session = null;
+    ['username', 'userNombre', 'userRol', 'user'].forEach(key => localStorage.removeItem(key));
+  }
+
+  function setSession(data) { session = data || null; }
+
+  async function refresh() {
+    if (!refreshPromise) {
+      refreshPromise = (async () => {
+        await csrf();
+        const response = await fetch(`${baseUrl}/auth/refresh-token`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'X-XSRF-TOKEN': cookie('XSRF-TOKEN') || csrfToken }
+        });
+        if (!response.ok) throw new Error('Sesión expirada');
+        return response.json().catch(() => null);
+      })().finally(() => { refreshPromise = null; });
     }
-    return this._mediaBaseUrl;
-  },
-  set mediaBaseUrl(val) { this._mediaBaseUrl = val; },
+    return refreshPromise;
+  }
 
-  getToken() {
-    return localStorage.getItem('access_token');
-  },
-
-  tokenExpirado() {
-    const token = this.getToken();
-    if (!token) return false;
+  async function logout() {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 < Date.now();
-    } catch (_) {
-      return true;
+      await csrf();
+      await fetch(`${baseUrl}/auth/logout`, { method: 'POST', credentials: 'include',
+        headers: { 'X-XSRF-TOKEN': cookie('XSRF-TOKEN') || csrfToken } });
+    } finally { clearAuthState(); }
+  }
+
+  async function request(endpoint, options = {}, retry = true) {
+    const method = options.method || 'GET';
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (mutation(method) && !endpoint.endsWith('/auth/csrf')) {
+      await csrf();
+      headers['X-XSRF-TOKEN'] = cookie('XSRF-TOKEN') || csrfToken;
     }
-  },
-
-  cerrarSesion(mensaje) {
-    if (typeof Auth !== 'undefined' && Auth._loggingOut) return;
-    if (this._sessionClosing) return;
-    this._sessionClosing = true;
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('username');
-    localStorage.removeItem('userNombre');
-    localStorage.removeItem('userRol');
-    if (typeof Utils !== 'undefined') {
-      Utils.showToast(mensaje || 'Sesión expirada. Inicia sesión nuevamente.', 'error', 6000);
+    const response = await fetch(`${baseUrl}${endpoint}`, { ...options, method, credentials: 'include', headers });
+    if (response.status === 401 && retry && !authEndpoint(endpoint)) {
+      try { await refresh(); return request(endpoint, options, false); }
+      catch (_) { clearAuthState(); throw new Error('Sesión expirada'); }
     }
-    setTimeout(() => {
-      if (typeof Auth !== 'undefined' && Auth.checkAuthStatus) {
-        Auth.checkAuthStatus();
-      }
-    }, 500);
-  },
-
-  async request(endpoint, options = {}) {
-    if (this.tokenExpirado()) {
-      this.cerrarSesion('Tu sesión ha expirado. Inicia sesión nuevamente.');
-      throw new Error('Sesión expirada');
-    }
-
-    const url = this.baseUrl + endpoint;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      ...options,
-    };
-
-    const token = this.getToken();
-    if (token) {
-      config.headers['Authorization'] = 'Bearer ' + token;
-    }
-
-    let response;
-    try {
-      response = await fetch(url, config);
-    } catch (err) {
-      throw new Error('Error de conexión con el servidor');
-    }
-
     if (!response.ok) {
-      let message = 'Error en la solicitud';
-      try {
-        const err = await response.json();
-        message = err.error || err.message || message;
-      } catch (_) {}
-
-      if (response.status === 401) {
-        this.cerrarSesion('Sesión expirada. Inicia sesión nuevamente.');
-        throw new Error('Sesión expirada');
-      }
-
+      let message = `Error ${response.status}`;
+      try { const error = await response.json(); message = error.message || error.error || message; } catch (_) {}
       throw new Error(message);
     }
-
     if (response.status === 204) return null;
     const text = await response.text();
     return text ? JSON.parse(text) : null;
-  },
+  }
 
-  async requestUpload(endpoint, formData) {
-    if (this.tokenExpirado()) {
-      this.cerrarSesion('Tu sesión ha expirado.');
-      throw new Error('Sesión expirada');
-    }
+  async function upload(endpoint, formData, retry = true) {
+    await csrf();
+    const response = await fetch(`${baseUrl}${endpoint}`, { method: 'POST', credentials: 'include', body: formData,
+      headers: { 'X-XSRF-TOKEN': cookie('XSRF-TOKEN') || csrfToken } });
+    if (response.status === 401 && retry) { await refresh(); return upload(endpoint, formData, false); }
+    if (!response.ok) throw new Error('Error al subir archivo');
+    return response.status === 204 ? null : response.json();
+  }
 
-    const url = this.baseUrl + endpoint;
-    const config = {
-      method: 'POST',
-      headers: {},
-      body: formData,
-    };
-
-    const token = this.getToken();
-    if (token) {
-      config.headers['Authorization'] = 'Bearer ' + token;
-    }
-
-    try {
-      const response = await fetch(url, config);
-      if (!response.ok) {
-        let message = 'Error al subir archivo';
-        try {
-          const err = await response.json();
-          message = err.error || message;
-        } catch (_) {}
-        if (response.status === 401) {
-          this.cerrarSesion('Sesión expirada. Inicia sesión nuevamente.');
-          throw new Error('Sesión expirada');
-        }
-        throw new Error(message);
-      }
-      const text = await response.text();
-      return text ? JSON.parse(text) : null;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  async download(endpoint) {
-    const response = await fetch(this.baseUrl + endpoint, { headers: { Authorization: 'Bearer ' + this.getToken() } });
+  async function download(endpoint, options = {}) {
+    const response = await fetch(`${baseUrl}${endpoint}`, { ...options, credentials: 'include' });
     if (!response.ok) throw new Error('No se pudo descargar el archivo');
     return response.blob();
-  },
+  }
 
-  async downloadPost(endpoint, body) {
-    const response = await fetch(this.baseUrl + endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + this.getToken() },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) throw new Error('No se pudo descargar el archivo');
-    return response.blob();
-  },
-
-  get(endpoint) {
-    return this.request(endpoint);
-  },
-
-  post(endpoint, body) {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  },
-
-  put(endpoint, body) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    });
-  },
-
-  del(endpoint) {
-    return this.request(endpoint, {
-      method: 'DELETE',
-    });
-  },
-
-  entrada(formData) { return this.requestUpload('/checador/entrada', formData); },
-  salida(formData) { return this.requestUpload('/checador/salida', formData); },
-  miTablero() { return this.get('/checador/mi-tablero'); },
-  miHorario() { return this.get('/checador/mi-horario'); },
-  horarios() { return this.get('/horarios'); },
-  horarioEmpleado(id) { return this.get('/usuarios/' + encodeURIComponent(id) + '/horario'); },
-  guardarHorarioEmpleado(id, body) { return this.post('/usuarios/' + encodeURIComponent(id) + '/horario', body); },
-  puntosGeograficos() { return this.get('/puntos-geograficos'); },
-  asistencias() { return this.get('/asistencias'); },
-  aprobarEvidencia(id) { return this.post('/asistencias/evidencias/' + encodeURIComponent(id) + '/aprobar', {}); },
-  rechazarEvidencia(id, body) { return this.post('/asistencias/evidencias/' + encodeURIComponent(id) + '/rechazar', body || {}); },
-  evidenciasPendientes() { return this.get('/asistencias/evidencias/pendientes'); },
-  evidencias() { return this.get('/asistencias/evidencias'); },
-  justificacionesPendientes() { return this.get('/justificaciones/pendientes'); },
-  misJustificaciones() { return this.get('/justificaciones/mias'); },
-  generarDeduccionesAsistencia(usuarioId, inicio, fin) { return this.post('/nomina/asistencia/generar', { usuarioId, inicio, fin }); },
-  configuracionAsistencia() { return this.get('/configuracion/asistencia'); },
-  generarDeduccionesPrestamos(fecha) { return this.post('/prestamos/deducciones/generar', { fecha }); },
-
-  startTokenCheck() {
-    setInterval(() => {
-      if (this.tokenExpirado()) {
-        this.cerrarSesion('Tu sesión ha expirado. Inicia sesión nuevamente.');
-      }
-    }, 60000);
-  },
-};
-
-API.startTokenCheck();
+  return {
+    baseUrl, mediaBaseUrl: baseUrl.replace(/\/api\/v1\/?$/, ''), getSession: () => session, setSession,
+    cargarCsrf: loadCsrf, cerrarSesion: logout, get: endpoint => request(endpoint),
+    post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
+    put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
+    del: endpoint => request(endpoint, { method: 'DELETE' }), upload, requestUpload: upload,
+    request, download,
+  };
+})();

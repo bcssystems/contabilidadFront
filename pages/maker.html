@@ -1,0 +1,42 @@
+<div class="page-content maker-page">
+  <div class="maker-hero">
+    <div>
+      <div class="maker-eyebrow"><i class="fas fa-cubes me-2"></i>WORKSHOP DIGITAL</div>
+      <h2>Maker</h2>
+      <p>Calcula costos reales de tus impresiones 3D y conserva cada cotización.</p>
+    </div>
+    <div class="maker-hero-mark"><i class="fas fa-cube"></i></div>
+  </div>
+
+  <ul class="nav nav-tabs maker-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-maker-tab="calculator"><i class="fas fa-calculator me-2"></i>Calculadora</button></li>
+    <li class="nav-item"><button class="nav-link" data-maker-tab="quotes"><i class="fas fa-clock-rotate-left me-2"></i>Cotizaciones</button></li>
+    <li class="nav-item"><button class="nav-link" data-maker-tab="projects"><i class="fas fa-diagram-project me-2"></i>Proyectos</button></li>
+    <li class="nav-item"><button class="nav-link" data-maker-tab="tasks"><i class="fas fa-list-check me-2"></i>Tareas</button></li>
+    <li class="nav-item"><button class="nav-link" data-maker-tab="filaments"><i class="fas fa-fill-drip me-2"></i>Filamentos</button></li>
+    <li class="nav-item"><button class="nav-link" data-maker-tab="materials"><i class="fas fa-layer-group me-2"></i>Materiales</button></li>
+    <li class="nav-item"><button class="nav-link" data-maker-tab="settings"><i class="fas fa-sliders me-2"></i>Configuración</button></li>
+  </ul>
+
+  <section id="maker-calculator" class="maker-tab-panel"></section>
+  <section id="maker-quotes" class="maker-tab-panel d-none"></section>
+  <section id="maker-projects" class="maker-tab-panel d-none"></section>
+  <section id="maker-tasks" class="maker-tab-panel d-none"></section>
+  <section id="maker-filaments" class="maker-tab-panel d-none"></section>
+  <section id="maker-materials" class="maker-tab-panel d-none"></section>
+  <section id="maker-settings" class="maker-tab-panel d-none"></section>
+
+  <div class="modal fade" id="makerDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fas fa-receipt me-2 text-primary"></i>Detalle de cotización</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="makerDetailBody"></div>
+    </div></div>
+  </div>
+  <div class="modal fade" id="makerCatalogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="makerCatalogTitle">Nuevo registro</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="makerCatalogBody"></div>
+      <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="makerCatalogSave">Guardar</button></div>
+    </div></div>
+  </div>
+</div>

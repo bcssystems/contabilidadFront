@@ -19,3 +19,20 @@
 .maker-setting-card small{line-height:1.35}
 .maker-setting-input{flex:0 0 155px}
 @media(max-width:1100px){.maker-kanban-projects{grid-auto-columns:minmax(275px,1fr);grid-template-columns:repeat(4,minmax(275px,1fr))}.maker-kanban-tasks,.maker-inline-kanban{grid-auto-columns:minmax(275px,1fr);grid-template-columns:repeat(3,minmax(275px,1fr))}}
+
+/* Ajustes finales de layout Maker: acciones a la derecha y tableros sin wrap. */
+.maker-toolbar{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;width:100%;min-height:42px;margin:1.5rem 0 1rem!important}
+.maker-toolbar>div:first-child{min-width:0}
+.maker-toolbar>.btn{display:inline-flex!important;align-items:center;justify-content:center;margin-left:auto!important;flex:0 0 auto!important;white-space:nowrap;width:auto!important}
+.maker-settings-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:1.25rem!important;padding:.5rem!important}
+.maker-setting-card{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:1.5rem!important;min-height:108px!important;padding:1.35rem 1.5rem!important;margin:0!important}
+.maker-setting-info{display:flex;flex-direction:column;gap:.35rem;min-width:0;flex:1;padding:0!important}
+.maker-setting-info span{font-size:.95rem;font-weight:700;line-height:1.25;text-transform:none!important}
+.maker-setting-info small{font-size:.72rem;line-height:1.4;text-transform:none!important;overflow-wrap:anywhere}
+.maker-setting-input{width:155px;max-width:155px;flex:0 0 155px!important}
+.maker-kanban{display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;gap:1.25rem!important;width:100%;overflow-x:auto!important;overflow-y:hidden;padding:.5rem .25rem 1.25rem!important}
+.maker-column{display:flex!important;flex:1 1 0!important;flex-direction:column!important;min-width:0!important;min-height:470px!important;padding:1rem!important;border-radius:16px!important;background:linear-gradient(180deg,rgba(30,41,59,.8),rgba(15,23,42,.55))!important}
+.maker-column-body{display:flex;flex:1;flex-direction:column;gap:.75rem}
+.maker-board-card{width:100%;margin:0!important}
+@media(max-width:1200px){.maker-column{flex:0 0 290px!important;min-width:290px!important}.maker-kanban-projects,.maker-kanban-tasks,.maker-inline-kanban{grid-template-columns:none!important}}
+@media(max-width:640px){.maker-toolbar{align-items:stretch!important;flex-direction:column!important}.maker-toolbar>.btn{width:100%!important;margin-left:0!important}.maker-settings-grid{grid-template-columns:1fr!important;padding:.25rem!important}.maker-setting-card{align-items:stretch!important;flex-direction:column!important;gap:1rem!important}.maker-setting-input{width:100%;max-width:none;flex-basis:auto!important}}

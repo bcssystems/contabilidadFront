@@ -103,17 +103,30 @@ const Maker = (() => {
       event.preventDefault(); event.stopPropagation();
       const id = Number(button.dataset.kebabId); const type = button.dataset.kebabType;
       const isQuote = type === 'quote';
-      Utils.abrirMenuKebab(button, [
-        { icon: 'fa-eye', text: 'Ver detalle', onClick: async () => { if (isQuote) showDetail(await API.get('/maker/cotizaciones/' + id)); else if (type === 'material') materialModal(id); else filamentModal(id); } },
+      const actions = [
+        { icon: 'fa-eye', text: 'Ver detalle', onClick: async () => { if (isQuote) showDetail(await API.get('/maker/cotizaciones/' + id)); else catalogDetail(type, id); } },
+      ];
+      if (!isQuote) actions.push({ icon: 'fa-pen', text: 'Editar', onClick: () => type === 'material' ? materialModal(id) : filamentModal(id) });
+      actions.push(
         { icon: 'fa-trash-alt', text: isQuote ? 'Eliminar cotización' : 'Desactivar', danger: true, onClick: async () => {
           if (!await Utils.confirmAction(isQuote ? '¿Eliminar esta cotización?' : '¿Desactivar este registro?', 'Confirmar', isQuote ? 'Eliminar' : 'Desactivar')) return;
           await API.del(isQuote ? '/maker/cotizaciones/' + id : '/maker/' + (type === 'material' ? 'materiales/' : 'filamentos/') + id);
           Utils.showToast(isQuote ? 'Cotización eliminada' : 'Registro desactivado', 'success');
           if (isQuote) loadQuotes(); else await refreshCatalogs();
         } },
-      ]);
+      );
+      Utils.abrirMenuKebab(button, actions);
     }));
     document.querySelectorAll('[data-maker-page]').forEach(b => b.addEventListener('click', () => { if (!b.disabled) { state.quotesPage += b.dataset.makerPage === 'next' ? 1 : -1; loadQuotes(); } }));
+  }
+  function catalogDetail(type, id) {
+    const item = type === 'material' ? state.materials.find(m => m.id === id) : state.filaments.find(f => f.id === id);
+    if (!item) return;
+    if (type === 'material') {
+      Utils.showDialog('Detalle de material', `<div class="maker-detail-grid"><div><small>Nombre</small><strong>${esc(item.nombre)}</strong></div><div><small>Estado</small><strong>${item.activo ? 'Activo' : 'Inactivo'}</strong></div><div><small>Filamentos registrados</small><strong>${state.filaments.filter(f => f.materialId === item.id).length}</strong></div></div>`);
+    } else {
+      Utils.showDialog('Detalle de filamento', `<div class="maker-detail-grid"><div><small>Nombre</small><strong>${esc(item.nombre)}</strong></div><div><small>Material</small><strong>${esc(item.material)}</strong></div><div><small>Marca</small><strong>${esc(item.marca || '-')}</strong></div><div><small>Color</small><strong>${esc(item.color || '-')}</strong></div><div><small>Precio por kilo</small><strong>${money(item.precioKilo)}</strong></div><div><small>Stock disponible</small><strong>${num(item.stockKg)} kg</strong></div><div><small>Estado</small><strong>${item.activo ? 'Activo' : 'Inactivo'}</strong></div></div>`);
+    }
   }
   function showDetail(q) { document.getElementById('makerDetailBody').innerHTML = `<div class="maker-detail-grid"><div><small>Folio</small><strong>${esc(q.folio)}</strong></div><div><small>Fecha</small><strong>${Utils.formatDateTime(q.fecha)}</strong></div><div><small>Material</small><strong>${num(q.gramosTotales)} g</strong></div><div><small>Costo cama</small><strong>${money(q.costoCama)}</strong></div><div><small>Precio sugerido / final</small><strong class="text-primary">${money(q.precioPiezaFinal ?? q.precioPieza)}</strong><div class="input-group input-group-sm mt-2"><span class="input-group-text">$</span><input id="mkFinalPrice" class="form-control" type="number" min="0" step="0.01" value="${q.precioPiezaFinal ?? q.precioPieza}"><button class="btn btn-primary" id="mkSaveFinalPrice" data-quote-id="${q.id}" title="Guardar precio final"><i class="fas fa-check"></i></button></div></div><div><small>Tipo de precio</small><strong>${esc(q.tipoPrecio)}</strong></div></div><hr><h6>Filamentos</h6><ul class="maker-detail-list">${q.filamentos.map(f => `<li><span>${esc(f.nombre)} · ${esc(f.color || '')}</span><b>${num(f.gramos)} g · ${money(f.costo)}</b></li>`).join('')}</ul><h6 class="mt-3">Extras</h6><ul class="maker-detail-list">${q.extras.length ? q.extras.map(e => `<li><span>${esc(e.nombre)} × ${num(e.cantidad)}</span><b>${money(e.importe)}</b></li>`).join('') : '<li><span>Sin extras</span><b>$0.00</b></li>'}</ul>`; new bootstrap.Modal(document.getElementById('makerDetailModal')).show(); }
 

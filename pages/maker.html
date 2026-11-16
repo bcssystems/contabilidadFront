@@ -1,4 +1,46 @@
 <div class="page-content maker-page">
+  <style>
+    /* Overrides locales de Maker: se cargan junto con la vista para evitar estilos cacheados. */
+    .maker-page .maker-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;width:100%;margin:1.25rem 0 1rem}
+    .maker-page .maker-toolbar>.btn{margin-left:auto;flex:0 0 auto;white-space:nowrap}
+    .maker-page .maker-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;padding:.5rem}
+    .maker-page .maker-setting-card{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;min-height:108px;padding:1.35rem 1.5rem;margin:0}
+    .maker-page .maker-setting-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:.35rem;padding:0}
+    .maker-page .maker-setting-info span{font-size:.95rem;font-weight:700;line-height:1.25;text-transform:none}
+    .maker-page .maker-setting-info small{font-size:.72rem;line-height:1.4;text-transform:none}
+    .maker-page .maker-setting-input{width:155px;max-width:155px;flex:0 0 155px}
+    .maker-page .maker-table-actions{display:flex;justify-content:flex-end;align-items:center;min-width:42px}
+    .maker-page .maker-table-kebab{width:34px;height:34px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center}
+    .maker-page .maker-kanban{display:flex;flex-wrap:nowrap;align-items:stretch;gap:1.25rem;width:100%;overflow-x:auto;overflow-y:hidden;padding:.5rem .25rem 1.25rem}
+    .maker-page .maker-column{display:flex;flex:1 1 0;flex-direction:column;min-width:0;min-height:470px;padding:1rem;border-radius:16px;background:linear-gradient(180deg,rgba(30,41,59,.8),rgba(15,23,42,.55))}
+    .maker-page .maker-column-body{display:flex;flex:1;flex-direction:column;gap:.75rem}
+    .maker-page .maker-board-card{width:100%;margin:0}
+    @media(max-width:1200px){.maker-page .maker-column{flex:0 0 290px;min-width:290px}}
+    @media(max-width:767.98px){
+      .maker-page{width:100%;max-width:100%;padding:0 .75rem 1.25rem;overflow:hidden}
+      .maker-page .maker-hero{min-height:132px;margin-bottom:.85rem;padding:1rem}
+      .maker-page .maker-hero-mark{display:none}
+      .maker-page .maker-tabs{margin-left:-.75rem;margin-right:-.75rem;padding:0 .75rem;overflow-x:auto;flex-wrap:nowrap}
+      .maker-page .maker-grid{display:flex;flex-direction:column;gap:.85rem;margin-top:.85rem}
+      .maker-page .maker-form-card,.maker-page .maker-result-card{width:100%;padding:.9rem}
+      .maker-page .maker-toolbar{align-items:stretch;flex-direction:column;gap:.7rem;margin:.9rem 0 .75rem}
+      .maker-page .maker-toolbar>.btn{width:100%;margin-left:0}
+      .maker-page .maker-form-actions{display:flex;flex-direction:column;gap:.55rem}
+      .maker-page .maker-form-actions .btn{width:100%;min-height:42px}
+      .maker-page .maker-line-row{grid-template-columns:1fr!important;gap:.5rem;margin-bottom:.75rem}
+      .maker-page .maker-filament-row .maker-line-index{display:none}
+      .maker-page .maker-settings-grid{grid-template-columns:1fr;padding:.25rem;gap:.75rem}
+      .maker-page .maker-setting-card{align-items:stretch;flex-direction:column;gap:1rem;min-height:0;padding:1rem}
+      .maker-page .maker-setting-input{width:100%;max-width:none;flex-basis:auto}
+      .maker-page .maker-kanban{gap:.75rem;width:calc(100% + .5rem);margin:0 -.25rem;padding:.35rem .25rem 1rem;scroll-snap-type:x proximity}
+      .maker-page .maker-column{flex:0 0 84vw;min-width:84vw;min-height:410px;padding:.8rem;scroll-snap-align:start}
+      .maker-page .maker-table{min-width:680px}
+      .maker-page .maker-detail-grid{grid-template-columns:1fr}
+      .maker-page .maker-detail-actions{display:flex;flex-direction:column;gap:.5rem}
+      .maker-page .maker-detail-actions .btn{width:100%}
+    }
+    @media(max-width:380px){.maker-page{padding-left:.55rem;padding-right:.55rem}.maker-page .maker-column{flex-basis:86vw;min-width:86vw}}
+  </style>
   <div class="maker-hero">
     <div>
       <div class="maker-eyebrow"><i class="fas fa-cubes me-2"></i>WORKSHOP DIGITAL</div>

@@ -1,5 +1,13 @@
 <div class="page-content">
-  <div class="page-header">
+  <style>
+    .usuarios-page-header{align-items:flex-start}
+    .usuarios-page-header .btn{margin-left:auto;white-space:nowrap}
+    .usuarios-inactive-actions{display:flex;justify-content:flex-start;margin:-.55rem 0 1rem}
+    .usuarios-filters{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:1.5rem}
+    .usuarios-filters>*{min-width:0!important;width:100%}
+    @media(max-width:575.98px){.usuarios-page-header{align-items:stretch;flex-direction:column}.usuarios-page-header .btn{width:100%;margin-left:0}.usuarios-inactive-actions{margin:0 0 .85rem}.usuarios-inactive-actions .btn{width:100%}.usuarios-filters{grid-template-columns:1fr!important}}
+  </style>
+  <div class="page-header usuarios-page-header">
     <div>
       <h4><i class="fas fa-users me-2" style="color:var(--primary)"></i>Usuarios</h4>
       <small class="text-muted">Administración unificada de usuarios y personal</small>
@@ -7,12 +15,15 @@
     <button class="btn btn-primary ripple" id="btnNuevoEmpleado">
       <i class="fas fa-plus me-1"></i> Nuevo Usuario
     </button>
-    <button class="btn btn-outline-secondary ripple ms-2" id="btnVerInactivos">
+  </div>
+
+  <div class="usuarios-inactive-actions">
+    <button class="btn btn-outline-secondary ripple" id="btnVerInactivos">
       <i class="fas fa-user-slash me-1"></i> Ver inactivos
     </button>
   </div>
 
-  <div class="filter-bar filter-bar-2cols">
+  <div class="filter-bar filter-grid-2 usuarios-filters">
     <div class="input-group">
       <span class="input-group-text"><i class="fas fa-search"></i></span>
       <input type="text" class="form-control" id="searchEmpleado" placeholder="Buscar usuario...">

@@ -36,3 +36,67 @@
 .maker-board-card{width:100%;margin:0!important}
 @media(max-width:1200px){.maker-column{flex:0 0 290px!important;min-width:290px!important}.maker-kanban-projects,.maker-kanban-tasks,.maker-inline-kanban{grid-template-columns:none!important}}
 @media(max-width:640px){.maker-toolbar{align-items:stretch!important;flex-direction:column!important}.maker-toolbar>.btn{width:100%!important;margin-left:0!important}.maker-settings-grid{grid-template-columns:1fr!important;padding:.25rem!important}.maker-setting-card{align-items:stretch!important;flex-direction:column!important;gap:1rem!important}.maker-setting-input{width:100%;max-width:none;flex-basis:auto!important}}
+
+/* Experiencia móvil: sin desbordamiento accidental y con controles táctiles. */
+@media(max-width:767.98px){
+  .maker-page{width:100%;max-width:100%;padding:0 .75rem 1.25rem;overflow:hidden}
+  .maker-hero{display:flex;min-height:132px;margin:0 -.1rem .85rem;padding:1rem;border-radius:14px}
+  .maker-hero-mark{display:none}
+  .maker-hero h2{font-size:1.3rem;line-height:1.2}
+  .maker-hero p{max-width:29rem;font-size:.78rem;line-height:1.45}
+  .maker-tabs{margin:0 -.75rem;padding:0 .75rem;scrollbar-width:none}
+  .maker-tabs::-webkit-scrollbar{display:none}
+  .maker-tabs .nav-link{padding:.7rem .8rem;font-size:.75rem}
+  .maker-grid{display:flex;flex-direction:column;gap:.85rem;margin-top:.85rem}
+  .maker-form-card,.maker-result-card{width:100%;padding:.9rem;border-radius:13px}
+  .maker-form-card .row{--bs-gutter-x:.65rem;--bs-gutter-y:.7rem}
+  .maker-section-heading{gap:.65rem;margin-top:1.1rem!important;padding-bottom:.65rem;margin-bottom:.75rem}
+  .maker-section-heading h5{font-size:.9rem}
+  .maker-section-heading small{font-size:.68rem;line-height:1.3}
+  .maker-section-heading .btn{min-height:38px;padding:.45rem .65rem;white-space:nowrap}
+  .maker-form-actions{display:flex;flex-direction:column;gap:.55rem}
+  .maker-form-actions .btn{width:100%;min-height:42px}
+  .maker-line-row{gap:.5rem;margin-bottom:.75rem}
+  .maker-line-row .form-control,.maker-line-row .form-select{min-height:40px}
+  .maker-metric-grid{grid-template-columns:1fr 1fr!important}
+  .maker-metric-grid>div{min-width:0;padding:.6rem .5rem}
+  .maker-metric-grid strong{font-size:1rem;overflow-wrap:anywhere}
+  .maker-metric-grid small{font-size:.62rem;line-height:1.3}
+  .maker-sale-card{padding:.9rem}
+  .maker-sale-card strong{font-size:1.45rem;overflow-wrap:anywhere}
+  .maker-final-price-group{display:flex}
+  .maker-final-price-group input{min-width:0}
+  .maker-breakdown>div{gap:.5rem;font-size:.75rem}
+  .maker-toolbar{gap:.7rem!important;margin:.9rem 0 .75rem!important}
+  .maker-toolbar h5{font-size:.95rem}
+  .maker-toolbar small{display:block;font-size:.68rem;line-height:1.35}
+  .maker-kanban{gap:.75rem!important;margin:0 -.25rem;width:calc(100% + .5rem);padding:.35rem .25rem 1rem!important;scroll-snap-type:x proximity}
+  .maker-column{flex:0 0 min(84vw,300px)!important;min-width:min(84vw,300px)!important;min-height:410px!important;padding:.8rem!important;scroll-snap-align:start}
+  .maker-column-head{padding-bottom:.65rem;margin-bottom:.65rem}
+  .maker-board-card{padding:.7rem;font-size:.78rem}
+  .maker-card-title{font-size:.85rem;padding:.45rem 0 .2rem}
+  .maker-card-meta{flex-wrap:wrap;gap:.35rem;font-size:.67rem}
+  .maker-card-bottom{gap:.35rem;flex-wrap:wrap}
+  .maker-table{min-width:680px}
+  .maker-table td,.maker-table th{padding:.65rem .55rem;font-size:.72rem}
+  .maker-settings-grid{gap:.75rem!important}
+  .maker-setting-card{min-height:0!important;padding:1rem!important}
+  .maker-setting-info span{font-size:.88rem}
+  .maker-setting-info small{font-size:.68rem}
+  .maker-detail-grid{grid-template-columns:1fr!important;gap:.75rem}
+  .maker-detail-list li{align-items:flex-start;flex-direction:column;gap:.2rem;font-size:.78rem}
+  .maker-project-task-list{max-height:42vh;overflow-y:auto}
+  .modal-dialog{margin:.5rem}
+  .modal-content{border-radius:14px}
+  .modal-body{padding:1rem!important}
+  .maker-detail-actions{display:flex;flex-direction:column;gap:.5rem}
+  .maker-detail-actions .btn{width:100%}
+}
+
+@media(max-width:380px){
+  .maker-page{padding-left:.55rem;padding-right:.55rem}
+  .maker-hero{padding:.85rem}
+  .maker-tabs{margin-left:-.55rem;margin-right:-.55rem;padding-left:.55rem;padding-right:.55rem}
+  .maker-metric-grid{grid-template-columns:1fr!important}
+  .maker-column{flex-basis:86vw!important;min-width:86vw!important}
+}

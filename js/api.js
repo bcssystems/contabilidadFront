@@ -73,7 +73,7 @@ const API = (() => {
     }
     if (!response.ok) {
       let message = `Error ${response.status}`;
-      try { const error = await response.json(); message = error.message || error.error || message; } catch (_) {}
+      try { const raw = await response.text(); const error = JSON.parse(raw); message = error.message || error.error || raw || message; } catch (_) {}
       throw new Error(message);
     }
     if (response.status === 204) return null;

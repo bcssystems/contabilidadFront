@@ -14,4 +14,8 @@
 .maker-column{height:100%;min-width:0}
 .maker-settings-grid{gap:1.25rem;padding:.25rem}
 .maker-setting-card{min-height:92px;padding:1.15rem 1.25rem}
+.maker-setting-info{min-width:0;flex:1;padding-right:1rem}
+.maker-setting-card span{font-size:.9rem;letter-spacing:.01em}
+.maker-setting-card small{line-height:1.35}
+.maker-setting-input{flex:0 0 155px}
 @media(max-width:1100px){.maker-kanban-projects{grid-auto-columns:minmax(275px,1fr);grid-template-columns:repeat(4,minmax(275px,1fr))}.maker-kanban-tasks,.maker-inline-kanban{grid-auto-columns:minmax(275px,1fr);grid-template-columns:repeat(3,minmax(275px,1fr))}}

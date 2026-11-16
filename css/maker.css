@@ -6,6 +6,8 @@
 
 /* Tableros: las etapas permanecen en una sola fila y se desplazan horizontalmente. */
 .maker-toolbar>.btn{margin-left:auto;flex:none}
+.maker-calculated-value{color:var(--text);font-weight:700;min-height:38px;padding:.55rem .75rem;border:1px solid var(--border);border-radius:.375rem;background:var(--secondary-light)}
+.maker-calculated-value i{color:var(--neon)}
 .maker-kanban{display:grid;grid-auto-flow:column;align-items:stretch;overflow-x:auto;overscroll-behavior-x:contain;padding:.25rem .15rem 1rem;scrollbar-width:thin}
 .maker-kanban-projects{grid-template-columns:repeat(4,minmax(0,1fr))}
 .maker-kanban-tasks,.maker-inline-kanban{grid-template-columns:repeat(3,minmax(0,1fr))}

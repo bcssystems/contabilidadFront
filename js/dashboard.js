@@ -1,4 +1,5 @@
 let _sidebarDelegationReady = false;
+let _notificationsReady = false;
 
 const ENABLED_MODULES = new Set([
   'inicio',
@@ -9,6 +10,7 @@ const ENABLED_MODULES = new Set([
   'revision-asistencia',
   'prestamos',
   'configuracion',
+  'maker',
 ]);
 
 const ADMIN_ONLY_MODULES = new Set([
@@ -126,6 +128,7 @@ const Dashboard = {
     if (avatar) avatar.textContent = (localStorage.getItem('username') || 'U').charAt(0).toUpperCase();
 
     this.bindEvents();
+    initNotifications();
   },
 
   bindEvents() {
@@ -169,3 +172,30 @@ const Dashboard = {
     }
   },
 };
+
+async function initNotifications() {
+  if (_notificationsReady) return;
+  _notificationsReady = true;
+  const button = document.getElementById('btn-notifications');
+  const list = document.getElementById('notification-list');
+  const count = document.getElementById('notification-count');
+  const readAll = document.getElementById('btn-read-all-notifications');
+  if (!button || !list) return;
+  const render = async () => {
+    try {
+      const [page, unread] = await Promise.all([API.get('/maker/notificaciones?page=0&size=15'), API.get('/maker/notificaciones/no-leidas')]);
+      count.textContent = unread || 0; count.classList.toggle('d-none', !unread);
+      const items = page?.content || [];
+      list.innerHTML = items.length ? items.map(n => `<button class="notification-item ${n.leida ? '' : 'unread'}" data-notification-id="${n.id}" data-reference-type="${n.referenciaTipo || ''}"><span class="notification-icon"><i class="fas ${n.leida ? 'fa-envelope-open' : 'fa-bell'}"></i></span><span><strong>${Utils.esc(n.titulo)}</strong><small>${Utils.esc(n.mensaje)}</small><em>${Utils.formatDateTime(n.fecha)}</em></span></button>`).join('') : '<div class="notification-empty"><i class="fas fa-check-circle"></i><br>No hay notificaciones</div>';
+      list.querySelectorAll('.notification-item').forEach(item => item.addEventListener('click', async () => {
+        try { await API.request('/maker/notificaciones/' + item.dataset.notificationId + '/leida', { method: 'PATCH' }); } catch (_) { }
+        item.classList.remove('unread');
+        if (item.dataset.referenceType) Utils.cargarVista('pages/maker.html', 'maker');
+        render();
+      }));
+    } catch (error) { list.innerHTML = `<div class="notification-empty">${Utils.esc(error.message)}</div>`; }
+  };
+  button.addEventListener('click', render);
+  readAll?.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); try { await API.request('/maker/notificaciones/leer-todas', { method: 'PATCH' }); await render(); } catch (e) { Utils.showToast(e.message, 'error'); } });
+  render();
+}

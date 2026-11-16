@@ -66,7 +66,7 @@ function renderPagination(total, totalPages) {
 
 async function viewEvidence(id) {
   try {
-    const response = await fetch(API.baseUrl + '/asistencias/evidencias/' + encodeURIComponent(id) + '/archivo', { headers: { Authorization: 'Bearer ' + API.getToken() } });
+    const response = await fetch(API.baseUrl + '/asistencias/evidencias/' + encodeURIComponent(id) + '/archivo', { credentials: 'include' });
     if (!response.ok) throw new Error('No se pudo cargar la selfie.');
     const url = URL.createObjectURL(await response.blob());
     Utils.showDialog('Selfie de asistencia #' + id, '<img src="' + url + '" alt="Selfie de asistencia" style="display:block;max-width:100%;max-height:65vh;margin:auto;border-radius:10px">');

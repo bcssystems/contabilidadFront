@@ -33,6 +33,7 @@
 .maker-table-actions{display:flex;justify-content:flex-end;align-items:center;position:relative;min-width:42px}
 .maker-table-kebab{width:34px;height:34px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center}
 .maker-table-kebab:hover,.maker-table-kebab:focus{color:var(--primary);background:var(--primary-light)}
+.maker-stock{font-weight:700;color:var(--text-secondary);white-space:nowrap}
 .maker-kanban{display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;gap:1.25rem!important;width:100%;overflow-x:auto!important;overflow-y:hidden;padding:.5rem .25rem 1.25rem!important}
 .maker-column{display:flex!important;flex:1 1 0!important;flex-direction:column!important;min-width:0!important;min-height:470px!important;padding:1rem!important;border-radius:16px!important;background:linear-gradient(180deg,rgba(30,41,59,.8),rgba(15,23,42,.55))!important}
 .maker-column-body{display:flex;flex:1;flex-direction:column;gap:.75rem}
